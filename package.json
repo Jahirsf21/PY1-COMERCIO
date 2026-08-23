@@ -10,9 +10,12 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "predeploy": "pnpm run build",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -d dist",
+    "seed-algolia": "node scripts/seed-algolia.mjs"
   },
   "dependencies": {
+    "algoliasearch": "^5.57.0",
+    "dotenv": "^17.4.2",
     "gh-pages": "^6.3.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
