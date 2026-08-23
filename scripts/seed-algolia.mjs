@@ -11,6 +11,7 @@ const client = algoliasearch(appID, adminApiKey);
 /**
  * Lee y parsea el archivo JSON con los records a indexar
  * Si el record no tiene objectID automaticamente se le asigna uno
+ * Asigna automaticamente la cantidad disponible de productos segun el canal de venta
  * @returns Array de records
  * @throws {Error} Si el archivo no contiene un array válido
  */
@@ -22,8 +23,10 @@ async function get_records() {
   }
   records.forEach((record, index) => {
     if (!record.objectID) {
-      record.objectID = `PR${index}`;
+      record.objectID = `PRODUCT${index}`;
     }
+    record.b2c_available_quantity = record.b2c_stock_quantity - record.b2c_reserved_quantity
+    record.b2b_available_quantity = record.b2b_stock_quantity - record.b2b_reserved_quantity
   });
   return records;
 }
