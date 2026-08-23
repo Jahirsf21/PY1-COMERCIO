@@ -1,72 +1,38 @@
 [
   {
-    "objectID":"PD0001",
-    "title":"Nike Air Max 90",
-    "description":"The Air Max 90 stays true to its original running roots with the iconic Waffle sole, while stitched overlays and textured details create the '90s look you love. Visible Air cushioning adds comfort to your stride.",
-    "brand":"Nike",
-    "price":844.950,
-    "currency":"USD",
-    "categories":["Sports footwear", "Running", "Training", "Casual", "Unisex"],
-    "in_stock":true,
-    "stock_quantity":25,
-    "image_url":"https://nikeco.vtexassets.com/arquivos/ids/1052210-1200-auto?v=639129016142100000&width=1200&height=auto&aspect=true",
-    "facets":[
-      {
-        "color":["Black", "White", "Grey", "Red"],
-        "size":["26", "27", "28", "29", "30"],
-        "gender":["Men", "Wowen", "Unisex"],
-        "recommended_use":["Running","Training","Casual"],
-        "waterproof":[
-          {
-            "applies": true,
-            "level": "waterproof"
-          }
-        ]}],
-    "keywords": [
-      "sneakers",
-      "running",
-      "marathon",
-      "training",
-      "sports footwear",
-      "men",
-      "women",
-      "unisex"
-    ]
-  },
+    "objectID": "",
+    "title": "",
+    "description": "",
+    "brand": "",
+    "categories": [],
+    "image_url": "",
 
+    "sales_channels": [],
+    "in_stock": "",
+    "total_stock_quantity": "",
 
-  {
-    "objectID":"PD0002",
-    "title":"QUECHUA Men's Hiking Trousers - NH500 Cargo - Grey",
-    "description":"Cargo trousers ideal for easy trail hikes, forest walks, or travel. Their adjustable fit ensures freedom of movement, while 8 pockets allow you to store your essentials.",
-    "brand":"QUECHUA",
-    "price":59.39,
-    "currency":"USD",
-    "categories":["Outdoor Clothing","Trousers", "Cargo", "Hiking", "Men"],
-    "in_stock":true,
-    "stock_quantity":40,
-    "image_url":"https://decathlon.cr/cdn/shop/files/pic_28521a89-a197-4cd4-a9dd-8f1e9bb38bb0.jpg?v=1787369723&width=1100",
-    "facets":[
-      {
-        "color":["Grey"],
-        "size":["S", "M", "L", "XL", "XXL"],
-        "gender":["Men"],
-        "recommended_use":["Hiking", "mountaineering", "rain"],
-        "waterproof":[
-          {
-            "applies": true,
-            "level": "waterproof"
-          }
-        ]}],
-    "keywords": [
-      "outdoor",
-      "hiking",
-      "windbreaker",
-      "rain",
-      "outdoor clothing",
-      "mountaineering",
-      "waterproof",
-      "camping"
-    ]
+    "b2c_price": "",
+    "b2b_price": "",
+    "currency": "",
+
+    "b2c_stock_quantity": "",
+    "b2c_reserved_quantity": "",
+    "b2c_min_order_quantity": "",
+    "b2c_max_order_quantity": "",
+    "b2c_step_quantity": "",
+
+    "b2b_stock_quantity": "",
+    "b2b_reserved_quantity": "",
+    "b2b_min_order_quantity": "",
+    "b2b_max_order_quantity": "",
+    "b2b_step_quantity": "",
+
+    "site_provinces": [],
+    "total_stock_by_site": [
+      { "site_province": "", "stock_quantity": "" },
+      { "site_province": "", "stock_quantity": "" }
+    ],
+    "facets": [],
+    "keywords": []
   }
 ]
