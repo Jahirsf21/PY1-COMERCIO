@@ -33,12 +33,14 @@ export type ProductRecord = {
   b2c_price: number
   b2c_stock_quantity: number
   b2c_reserved_quantity: number
+  b2c_available_quantity: number
   b2c_min_order_quantity: number
   b2c_max_order_quantity: number
   b2c_step_quantity: number
   b2b_price: number
   b2b_stock_quantity: number
   b2b_reserved_quantity: number
+  b2b_available_quantity: number
   b2b_min_order_quantity: number
   b2b_max_order_quantity: number
   b2b_step_quantity: number
