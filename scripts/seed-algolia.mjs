@@ -2,11 +2,13 @@ import "dotenv/config"
 import { algoliasearch } from "algoliasearch";
 import { readFile } from "node:fs/promises";
 
-const appID = process.env.VITE_ALGOLIA_APPLICATION_ID
-const adminApiKey = process.env.VITE_ALGOLIA_ADMIN_API_KEY
-const indexName = "grupo-04_products"
+const app_id = process.env.VITE_ALGOLIA_APPLICATION_ID
+const admin_api_key = process.env.VITE_ALGOLIA_ADMIN_API_KEY
+if (!app_id) console.error("Variable de entorno faltante: VITE_ALGOLIA_APPLICATION_ID")
+if (!admin_api_key) console.error("Variable de entorno faltante: VITE_ALGOLIA_ADMIN_API_KEY")
 
-const client = algoliasearch(appID, adminApiKey);
+const index_name = "grupo-04_products"
+const client = algoliasearch(app_id, admin_api_key);
 
 /**
  * Lee y parsea el archivo JSON con los records a indexar
@@ -37,7 +39,7 @@ async function get_records() {
 async function seed_algolia() {
   const records = await get_records();
   const { taskID } = await client.saveObjects({
-    indexName: indexName,
+    indexName: index_name,
     objects: records,
   })
 }
