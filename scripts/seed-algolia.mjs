@@ -29,6 +29,24 @@ async function get_records() {
     }
     record.b2c_available_quantity = record.b2c_stock_quantity - record.b2c_reserved_quantity
     record.b2b_available_quantity = record.b2b_stock_quantity - record.b2b_reserved_quantity
+    if (!record.sales_channels.includes("b2b")) {
+      record.b2b_price = 0;
+      record.b2b_stock_quantity = 0;
+      record.b2b_reserved_quantity = 0;
+      record.b2b_available_quantity = 0;
+      record.b2b_min_order_quantity = 0;
+      record.b2b_max_order_quantity = 0;
+      record.b2b_step_quantity = 0;  
+    }
+    if (!record.sales_channels.includes("b2c")) {
+      record.b2c_price = 0;
+      record.b2c_stock_quantity = 0;
+      record.b2c_reserved_quantity = 0;
+      record.b2c_available_quantity = 0;
+      record.b2c_min_order_quantity = 0;
+      record.b2c_max_order_quantity = 0;
+      record.b2c_step_quantity = 0; 
+    }
   });
   return records;
 }
