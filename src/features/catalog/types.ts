@@ -1,19 +1,41 @@
 import type { Hit } from "instantsearch.js"
 
+/**
+ * Canales de venta disponibles
+ */
 export type SalesChannel = "b2c" | "b2b"
 
+/**
+ * Descuento porcentual vigente durante un rango de fechas
+ */
 export type Discount = {
   percentage: number
   starts_at: number
   ends_at: number
 }
-export type StockBySite = {
-  site_province: string
+
+/**
+ * Imagen con url y texto alternativo para accesibilidad
+ */
+export type ProductImage = {
+  url: string
+  alt: string
+}
+
+/**
+ * Stock de un local puntual dentro de una provincia
+ */
+export type StockByLocation = {
+  province: string
+  locale_name: string
   stock_quantity: number
   reserved_quantity: number
   available_quantity: number
 }
 
+/**
+ * Facetas del producto
+ */
 export type ProductFacets = {
   color: string
   size: string
@@ -23,6 +45,9 @@ export type ProductFacets = {
   gender: string[]
 }
 
+/**
+ * Esquema del producto recibido
+ */
 export type ProductRecord = {
   objectID: string
   sku: string
@@ -34,8 +59,8 @@ export type ProductRecord = {
   sales_channels: SalesChannel[]
   currency: string
   keywords: string[]
-  images_url: string[]
-  image_url: string
+  image: ProductImage
+  images: ProductImage[]
   b2c_price: number
   b2c_discount?: Discount
   on_discount: boolean
@@ -49,16 +74,16 @@ export type ProductRecord = {
   b2c_min_order_quantity: number
   b2c_max_order_quantity: number
   b2c_step_quantity: number
-  b2c_stock_by_site: StockBySite[]
+  b2c_stock_by_location: StockByLocation[]
   b2b_stock_quantity: number
   b2b_reserved_quantity: number
   b2b_available_quantity: number
   b2b_min_order_quantity: number
   b2b_max_order_quantity: number
   b2b_step_quantity: number
-  b2b_stock_by_site: StockBySite[]
-  site_provinces: string[]
-  facets: [ProductFacets]
+  b2b_stock_by_location: StockByLocation[]
+  provinces: string[]
+  facets: ProductFacets
 }
 
 export type ProductHit = Hit<ProductRecord>
