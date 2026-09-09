@@ -88,27 +88,13 @@ async function get_records() {
     if (!record.image && Array.isArray(record.images) && record.images.length > 0) {
       record.image = record.images[0]
     }
-    const b2c = process_stock_by_location(record.b2c_stock_by_location)
-    record.b2c_stock_by_location = b2c.updated_locations
-    record.b2c_stock_quantity = b2c.stock_quantity
-    record.b2c_reserved_quantity = b2c.reserved_quantity
-    record.b2c_available_quantity = b2c.available_quantity
-    const b2b = process_stock_by_location(record.b2b_stock_by_location)
-    record.b2b_stock_by_location = b2b.updated_locations
-    record.b2b_stock_quantity = b2b.stock_quantity
-    record.b2b_reserved_quantity = b2b.reserved_quantity
-    record.b2b_available_quantity = b2b.available_quantity
-    if (!record.sales_channels.includes("b2b")) {
-      record.b2b_price = 0;
-      record.b2b_stock_quantity = 0;
-      record.b2b_reserved_quantity = 0;
-      record.b2b_available_quantity = 0;
-      record.b2b_min_order_quantity = 0;
-      record.b2b_max_order_quantity = 0;
-      record.b2b_step_quantity = 0;
-      record.b2b_stock_by_location = [];
-    }
-    if (!record.sales_channels.includes("b2c")) {
+    if (record.sales_channels.includes("b2c")) {
+      const b2c = process_stock_by_location(record.b2c_stock_by_location)
+      record.b2c_stock_by_location = b2c.updated_locations
+      record.b2c_stock_quantity = b2c.stock_quantity
+      record.b2c_reserved_quantity = b2c.reserved_quantity
+      record.b2c_available_quantity = b2c.available_quantity
+    } else {
       record.b2c_price = 0;
       record.b2c_stock_quantity = 0;
       record.b2c_reserved_quantity = 0;
@@ -117,6 +103,22 @@ async function get_records() {
       record.b2c_max_order_quantity = 0;
       record.b2c_step_quantity = 0;
       record.b2c_stock_by_location = [];
+    }
+    if (record.sales_channels.includes("b2b")) {
+      const b2b = process_stock_by_location(record.b2b_stock_by_location)
+      record.b2b_stock_by_location = b2b.updated_locations
+      record.b2b_stock_quantity = b2b.stock_quantity
+      record.b2b_reserved_quantity = b2b.reserved_quantity
+      record.b2b_available_quantity = b2b.available_quantity
+    } else {
+      record.b2b_price = 0;
+      record.b2b_stock_quantity = 0;
+      record.b2b_reserved_quantity = 0;
+      record.b2b_available_quantity = 0;
+      record.b2b_min_order_quantity = 0;
+      record.b2b_max_order_quantity = 0;
+      record.b2b_step_quantity = 0;
+      record.b2b_stock_by_location = [];
     }
     record.total_stock_quantity = record.b2c_stock_quantity + record.b2b_stock_quantity
     record.in_stock_b2c = record.b2c_stock_quantity > 0
@@ -146,3 +148,4 @@ seed_algolia().catch((error) => {
   console.error("Error al poblar el indice:", error);
   process.exit(1);
 });
+
