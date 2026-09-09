@@ -38,7 +38,7 @@ export type StockByLocation = {
  */
 export type ProductFacets = {
   color: string
-  size: string
+  size: string[]
   materials: string[]
   technology?: string
   recommend_use?: string[]
@@ -61,6 +61,7 @@ export type ProductRecord = {
   keywords: string[]
   image: ProductImage
   images: ProductImage[]
+  rating: number,
   b2c_price: number
   b2c_discount?: Discount
   on_discount: boolean
