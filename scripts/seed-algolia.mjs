@@ -61,9 +61,10 @@ function get_provinces_with_stock(...stock_arrays) {
 function is_currently_on_discount(discount) {
   if (!discount) return false
   const now = Date.now()
-  return discount.starts_at <= now && discount.ends_at >= now
+  const starts_at = new Date(discount.starts_at).getTime()
+  const ends_at = new Date(discount.ends_at).getTime()
+  return starts_at <= now && ends_at >= now
 }
-
 /**
  * Lee y parsea el archivo JSON con los records a indexar.
  * Por cada record:
