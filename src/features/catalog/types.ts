@@ -10,8 +10,8 @@ export type SalesChannel = "b2c" | "b2b"
  */
 export type Discount = {
   percentage: number
-  starts_at: number
-  ends_at: number
+  starts_at: string
+  ends_at: string
 }
 
 /**
