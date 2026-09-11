@@ -2,7 +2,6 @@ import { usePagination } from "react-instantsearch";
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
@@ -10,7 +9,7 @@ import {
 } from "@/components/ui/pagination";
 
 export function PaginationControls({ onPageChange }: { onPageChange: () => void }) {
-  const { pages, currentRefinement, nbPages, isFirstPage, isLastPage, refine, canRefine } = usePagination();
+  const { currentRefinement, nbPages, isFirstPage, isLastPage, refine, canRefine } = usePagination();
 
   function changePage(page: number) {
     if (page === currentRefinement) return;
@@ -23,13 +22,18 @@ export function PaginationControls({ onPageChange }: { onPageChange: () => void 
     return null;
   }
 
-  const showFirst = pages[0] > 0;
-  const showFirstEllipsis = pages[0] > 1;
-  const showLast = pages[pages.length - 1] < nbPages - 1;
-  const showLastEllipsis = pages[pages.length - 1] < nbPages - 2;
+  const visiblePageCount = Math.min(5, nbPages);
+  const firstVisiblePage = Math.min(
+    Math.max(currentRefinement - Math.floor(visiblePageCount / 2), 0),
+    nbPages - visiblePageCount,
+  );
+  const visiblePages = Array.from(
+    { length: visiblePageCount },
+    (_, index) => firstVisiblePage + index,
+  );
 
   return (
-    <Pagination className="mt-2 shrink-0 border-t border-input bg-background p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+    <Pagination className="mt-2 shrink-0 flex-wrap items-center gap-3 border-t border-input bg-background p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
       <PaginationContent className="flex-wrap justify-center">
         <PaginationItem>
           <PaginationPrevious
@@ -43,26 +47,7 @@ export function PaginationControls({ onPageChange }: { onPageChange: () => void 
           />
         </PaginationItem>
 
-        {showFirst && (
-          <PaginationItem>
-            <PaginationLink
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                changePage(0);
-              }}
-            >
-              1
-            </PaginationLink>
-          </PaginationItem>
-        )}
-        {showFirstEllipsis && (
-          <PaginationItem>
-            <PaginationEllipsis />
-          </PaginationItem>
-        )}
-
-        {pages.map((page) => (
+        {visiblePages.map((page) => (
           <PaginationItem key={page}>
             <PaginationLink
               href="#"
@@ -76,25 +61,6 @@ export function PaginationControls({ onPageChange }: { onPageChange: () => void 
             </PaginationLink>
           </PaginationItem>
         ))}
-
-        {showLastEllipsis && (
-          <PaginationItem>
-            <PaginationEllipsis />
-          </PaginationItem>
-        )}
-        {showLast && (
-          <PaginationItem>
-            <PaginationLink
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                changePage(nbPages - 1);
-              }}
-            >
-              {nbPages}
-            </PaginationLink>
-          </PaginationItem>
-        )}
 
         <PaginationItem>
           <PaginationNext

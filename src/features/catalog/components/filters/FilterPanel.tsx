@@ -23,12 +23,6 @@ export function FilterPanel() {
       <FilterSection title="Color">
         <RefinementFilter attribute="facets.color" />
       </FilterSection>
-      <FilterSection title="Materiales">
-        <RefinementFilter attribute="facets.materials" />
-      </FilterSection>
-      <FilterSection title="Tecnología">
-        <RefinementFilter attribute="facets.technology" />
-      </FilterSection>
       <FilterSection title="Uso recomendado">
         <RefinementFilter attribute="facets.recommend_use" />
       </FilterSection>
