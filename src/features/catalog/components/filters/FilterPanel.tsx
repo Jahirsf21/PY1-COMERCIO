@@ -8,20 +8,23 @@ export function FilterPanel() {
       <FilterSection title="Categorías">
         <RefinementFilter attribute="categories" />
       </FilterSection>
+      <FilterSection title="Género">
+        <RefinementFilter attribute="facets.gender" />
+      </FilterSection>
       <FilterSection title="Precio">
         <PriceRangeFilter />
       </FilterSection>
       <FilterSection title="Marca">
         <RefinementFilter attribute="brand" />
       </FilterSection>
-      <FilterSection title="Género">
-        <RefinementFilter attribute="facets.gender" />
-      </FilterSection>
       <FilterSection title="Talla">
         <RefinementFilter attribute="facets.size" />
       </FilterSection>
       <FilterSection title="Color">
         <RefinementFilter attribute="facets.color" />
+      </FilterSection>
+      <FilterSection title="Materiales">
+        <RefinementFilter attribute="facets.materials" />
       </FilterSection>
       <FilterSection title="Uso recomendado">
         <RefinementFilter attribute="facets.recommend_use" />
