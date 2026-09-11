@@ -1,5 +1,8 @@
 import { useId } from "react";
-import { useRefinementList, type UseRefinementListProps } from "react-instantsearch";
+import {
+  useRefinementList,
+  type UseRefinementListProps,
+} from "react-instantsearch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 
@@ -10,7 +13,15 @@ type RefinementFilterProps = {
 
 export function RefinementFilter({ attribute, transformItems }: RefinementFilterProps) {
   const id = useId();
-  const { items, refine } = useRefinementList({ attribute, transformItems });
+  const { items, refine, canToggleShowMore, isShowingMore, toggleShowMore } =
+    useRefinementList({
+      attribute,
+      transformItems,
+      limit: 10,
+      showMore: true,
+      showMoreLimit: 100,
+    });
+
   return (
     <div className="space-y-2">
       {items.map((item) => (
@@ -30,6 +41,15 @@ export function RefinementFilter({ attribute, transformItems }: RefinementFilter
           </span>
         </Label>
       ))}
+      {canToggleShowMore && (
+        <button
+          type="button"
+          className="w-full cursor-pointer rounded-md px-2 py-2 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+          onClick={toggleShowMore}
+        >
+          {isShowingMore ? "Mostrar menos" : "Mostrar más"}
+        </button>
+      )}
     </div>
   );
 }

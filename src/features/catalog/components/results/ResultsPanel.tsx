@@ -4,6 +4,7 @@ import { MobileFilterSheet } from "../filters/MobileFilterSheet";
 import { ProductGrid } from "./ProductGrid";
 import { PaginationControls } from "./PaginationControls";
 import { HitsPerPageSelect } from "./HitsPerPageSelect";
+import { SortBySelect } from "./SortBySelect";
 
 export function ResultsPanel() {
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -19,7 +20,8 @@ export function ResultsPanel() {
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-      <div className="mb-4 flex shrink-0 justify-end">
+      <div className="mb-4 flex shrink-0 flex-wrap items-center justify-end gap-3">
+        <SortBySelect />
         <HitsPerPageSelect />
       </div>
       <div className="relative min-h-0 flex-1">
