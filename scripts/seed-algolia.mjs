@@ -135,7 +135,6 @@ async function get_records() {
  * @returns {Promise<void>}
  */
 async function seed_algolia() {
-  await ensure_product_id_is_filterable()
   const records = await get_records();
   const { taskID } = await client.saveObjects({
     indexName: index_name,
