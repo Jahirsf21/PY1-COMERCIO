@@ -1,0 +1,123 @@
+[
+  {
+    "sku": "NK0001-NEGRO-27",
+    "product_id": "NK0001",
+    "title": "Nike Air Max 90",
+    "description": "Los Air Max 90 se mantienen fieles a sus raíces de correr originales con la icónica suela tipo waffle, y los revestimientos cosidos y los detalles texturizados crean el look de los 90 que más te gusta. Su amortiguación Air visible aporta comodidad a tu recorrido.",
+    "brand": "Nike",
+    "categories": ["TENIS"],
+    "sales_channels": ["b2c", "b2b"],
+    "currency": "USD",
+    "keywords": ["nike", "tenis", "running", "casual", "unisex"],
+    "images_url": [
+      "https://nikeco.vtexassets.com/arquivos/ids/1052210-1200-auto?v=639129016142100000&width=1200&height=auto&aspect=true"
+    ],
+    "b2c_price": 844.95,
+    "b2b_price": 718.21,
+    "b2c_min_order_quantity": 1,
+    "b2c_max_order_quantity": 10,
+    "b2c_step_quantity": 1,
+    "b2c_stock_by_site": [
+      { "site_province": "San José", "stock_quantity": 8, "reserved_quantity": 2 },
+      { "site_province": "Alajuela", "stock_quantity": 5, "reserved_quantity": 0 }
+    ],
+    "b2b_min_order_quantity": 5,
+    "b2b_max_order_quantity": 100,
+    "b2b_step_quantity": 5,
+    "b2b_stock_by_site": [
+      { "site_province": "San José", "stock_quantity": 20, "reserved_quantity": 3 }
+    ],
+    "facets": [
+      {
+        "color": "Negro",
+        "size": "27",
+        "materials": ["Synthetic", "Mesh", "Rubber"],
+        "technology": "Air Cushioning",
+        "recommend_use": ["Running", "Casual"],
+        "gender": ["Unisex"]
+      }
+    ]
+  },
+  {
+    "sku": "NK0001-BLANCO-27",
+    "product_id": "NK0001",
+    "title": "Nike Air Max 90",
+    "description": "Los Air Max 90 se mantienen fieles a sus raíces de correr originales con la icónica suela tipo waffle, y los revestimientos cosidos y los detalles texturizados crean el look de los 90 que más te gusta. Su amortiguación Air visible aporta comodidad a tu recorrido.",
+    "brand": "Nike",
+    "categories": ["TENIS"],
+    "sales_channels": ["b2c", "b2b"],
+    "currency": "USD",
+    "keywords": ["nike", "tenis", "running", "casual", "unisex"],
+    "images_url": [
+      "https://nikeco.vtexassets.com/arquivos/ids/1052210-1200-auto?v=639129016142100000&width=1200&height=auto&aspect=true"
+    ],
+    "b2c_price": 844.95,
+    "b2c_discount": {
+      "percentage": 15,
+      "starts_at": 1735689600000,
+      "ends_at": 1893456000000
+    },
+    "b2b_price": 718.21,
+    "b2c_min_order_quantity": 1,
+    "b2c_max_order_quantity": 10,
+    "b2c_step_quantity": 1,
+    "b2c_stock_by_site": [
+      { "site_province": "San José", "stock_quantity": 0, "reserved_quantity": 0 },
+      { "site_province": "Alajuela", "stock_quantity": 12, "reserved_quantity": 1 }
+    ],
+    "b2b_min_order_quantity": 5,
+    "b2b_max_order_quantity": 100,
+    "b2b_step_quantity": 5,
+    "b2b_stock_by_site": [
+      { "site_province": "San José", "stock_quantity": 5, "reserved_quantity": 0 }
+    ],
+    "facets": [
+      {
+        "color": "Blanco",
+        "size": "27",
+        "materials": ["Synthetic", "Mesh", "Rubber"],
+        "technology": "Air Cushioning",
+        "recommend_use": ["Running", "Casual"],
+        "gender": ["Unisex"]
+      }
+    ]
+  },
+  {
+    "sku": "NK0001-GRIS-28",
+    "product_id": "NK0001",
+    "title": "Nike Air Max 90",
+    "description": "Los Air Max 90 se mantienen fieles a sus raíces de correr originales con la icónica suela tipo waffle, y los revestimientos cosidos y los detalles texturizados crean el look de los 90 que más te gusta. Su amortiguación Air visible aporta comodidad a tu recorrido.",
+    "brand": "Nike",
+    "categories": ["TENIS"],
+    "sales_channels": ["b2b"],
+    "currency": "USD",
+    "keywords": ["nike", "tenis", "running", "casual", "unisex"],
+    "images_url": [
+      "https://nikeco.vtexassets.com/arquivos/ids/1052210-1200-auto?v=639129016142100000&width=1200&height=auto&aspect=true"
+    ],
+    "b2c_price": 799.95,
+    "b2b_price": 679.96,
+    "b2c_min_order_quantity": 1,
+    "b2c_max_order_quantity": 10,
+    "b2c_step_quantity": 1,
+    "b2c_stock_by_site": [
+      { "site_province": "San José", "stock_quantity": 6, "reserved_quantity": 0 }
+    ],
+    "b2b_min_order_quantity": 5,
+    "b2b_max_order_quantity": 100,
+    "b2b_step_quantity": 5,
+    "b2b_stock_by_site": [
+      { "site_province": "Alajuela", "stock_quantity": 10, "reserved_quantity": 2 }
+    ],
+    "facets": [
+      {
+        "color": "Gris",
+        "size": "28",
+        "materials": ["Synthetic", "Mesh", "Rubber"],
+        "technology": "Air Cushioning",
+        "recommend_use": ["Running", "Casual"],
+        "gender": ["Unisex"]
+      }
+    ]
+  }
+]
