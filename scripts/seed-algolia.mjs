@@ -7,7 +7,7 @@ const admin_api_key = process.env.VITE_ALGOLIA_ADMIN_API_KEY
 if (!app_id) console.error("Variable de entorno faltante: VITE_ALGOLIA_APPLICATION_ID")
 if (!admin_api_key) console.error("Variable de entorno faltante: VITE_ALGOLIA_ADMIN_API_KEY")
 
-const index_name = "grupo-04_products"
+const index_name = process.env.VITE_ALGOLIA_MAIN_INDEX
 const client = algoliasearch(app_id, admin_api_key);
 
 /**
@@ -135,6 +135,7 @@ async function get_records() {
  * @returns {Promise<void>}
  */
 async function seed_algolia() {
+  await ensure_product_id_is_filterable()
   const records = await get_records();
   const { taskID } = await client.saveObjects({
     indexName: index_name,
@@ -149,4 +150,3 @@ seed_algolia().catch((error) => {
   console.error("Error al poblar el indice:", error);
   process.exit(1);
 });
-
