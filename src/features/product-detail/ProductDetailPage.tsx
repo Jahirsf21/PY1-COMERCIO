@@ -1,16 +1,10 @@
-import { useEffect, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
-import {
-  ArrowLeftIcon,
-  CheckIcon,
-  MapPinIcon,
-  PackageCheckIcon,
-  StarIcon,
-} from "lucide-react";
-import { BrandHeader } from "@/components/brand-header";
-import { cn } from "@/lib/utils";
-import type { ProductHit } from "@/features/catalog/types";
-import { getProductVariants } from "./getProductVariants";
+import { useEffect, useState } from "react"
+import { Link, useParams, useSearchParams } from "react-router-dom"
+import { ArrowLeftIcon, CheckIcon, MapPinIcon, PackageCheckIcon, StarIcon } from "lucide-react"
+import { BrandHeader } from "@/components/brand-header"
+import { cn } from "@/lib/utils"
+import type { ProductHit } from "@/lib/types/product"
+import { getProductVariants } from "@/features/product-detail/getProductVariants"
 
 type VariantsResult = {
   productId: string;
@@ -134,7 +128,7 @@ export default function ProductDetailPage() {
       <main className="mx-auto w-full max-w-[1440px] px-4 py-5 lg:px-8 lg:py-8">
         <Link
           to="/"
-          className="mb-5 inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="mb-5 inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <ArrowLeftIcon aria-hidden="true" className="size-4" />
           Volver al catálogo

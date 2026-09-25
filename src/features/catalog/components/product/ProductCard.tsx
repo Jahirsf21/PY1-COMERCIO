@@ -1,8 +1,8 @@
-import { Highlight } from "react-instantsearch";
-import { Link } from "react-router-dom";
-import { StarIcon } from "lucide-react";
-import type { ProductHit } from "../../types";
-import { ProductImagePreview } from "./ProductImagePreview";
+import { Highlight } from "react-instantsearch"
+import { Link } from "react-router-dom"
+import { StarIcon } from "lucide-react"
+import type { ProductHit } from "@/lib/types/product"
+import { ProductImagePreview } from "@/features/catalog/components/product/ProductImagePreview"
 
 export function ProductCard({ hit }: { hit: ProductHit }) {
   return (
@@ -31,7 +31,7 @@ export function ProductCard({ hit }: { hit: ProductHit }) {
       </p>
       <Link
         to={`/producto/${encodeURIComponent(hit.product_id)}?variante=${encodeURIComponent(hit.sku)}`}
-        className="mt-auto inline-flex min-h-9 items-center justify-center rounded-full border border-input px-4 py-2 text-sm font-medium transition-colors hover:border-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="mt-auto inline-flex min-h-9 items-center justify-center rounded-md border border-input px-4 py-2 text-sm font-medium transition-colors hover:border-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         Ver detalles
       </Link>

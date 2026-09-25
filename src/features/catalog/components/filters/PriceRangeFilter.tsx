@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { useRange } from "react-instantsearch";
-import { Slider } from "@/components/ui/slider";
+import { useState } from "react"
+import { useRange } from "react-instantsearch"
+import { Slider } from "@/components/ui/slider"
 
 function formatPrice(value: number) {
   return value.toLocaleString("es-CR");

@@ -1,10 +1,10 @@
-import { useRef } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { MobileFilterSheet } from "../filters/MobileFilterSheet";
-import { ProductGrid } from "./ProductGrid";
-import { PaginationControls } from "./PaginationControls";
-import { HitsPerPageSelect } from "./HitsPerPageSelect";
-import { SortBySelect } from "./SortBySelect";
+import { useRef } from "react"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { MobileFilterSheet } from "@/features/catalog/components/filters/MobileFilterSheet"
+import { ProductGrid } from "@/features/catalog/components/results/ProductGrid"
+import { PaginationControls } from "@/features/catalog/components/results/PaginationControls"
+import { HitsPerPageSelect } from "@/features/catalog/components/results/HitsPerPageSelect"
+import { SortBySelect } from "@/features/catalog/components/results/SortBySelect"
 
 export function ResultsPanel() {
   const resultsRef = useRef<HTMLDivElement>(null);

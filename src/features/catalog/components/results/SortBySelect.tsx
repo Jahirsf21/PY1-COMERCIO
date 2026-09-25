@@ -1,8 +1,8 @@
-import { useId } from "react";
-import { useSortBy } from "react-instantsearch";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { algolia_indices } from "@/lib/searchClient";
+import { useId } from "react"
+import { useSortBy } from "react-instantsearch"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { algolia_indices } from "@/lib/searchClient"
 
 const SORT_ITEMS = [
   { label: "Relevancia", value: algolia_indices.main },

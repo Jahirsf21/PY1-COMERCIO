@@ -1,5 +1,5 @@
-import { algolia_indices, searchClient } from "@/lib/searchClient";
-import type { ProductHit, ProductRecord } from "@/features/catalog/types";
+import { algolia_indices, searchClient } from "@/lib/searchClient"
+import type { ProductHit, ProductRecord } from "@/lib/types/product"
 
 
 /**

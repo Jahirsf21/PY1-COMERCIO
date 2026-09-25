@@ -1,5 +1,5 @@
-import { useSearchBox } from "react-instantsearch";
-import { Input } from "@/components/ui/input";
+import { useSearchBox } from "react-instantsearch"
+import { Input } from "@/components/ui/input"
 
 export function SearchInput() {
   const { query, refine } = useSearchBox();
