@@ -1,6 +1,6 @@
-import { FilterSection } from "./FilterSection";
-import { PriceRangeFilter } from "./PriceRangeFilter";
-import { RefinementFilter } from "./RefinementFilter";
+import { FilterSection } from "@/features/catalog/components/filters/FilterSection";
+import { PriceRangeFilter } from "@/features/catalog/components/filters/PriceRangeFilter";
+import { RefinementFilter } from "@/features/catalog/components/filters/RefinementFilter";
 
 export function FilterPanel() {
   return (

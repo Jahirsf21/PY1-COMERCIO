@@ -1,4 +1,4 @@
-import { SearchInput } from "./SearchInput";
+import { SearchInput } from "@/features/catalog/components/search/SearchInput";
 
 export function SearchBar() {
   return (

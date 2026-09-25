@@ -1,6 +1,6 @@
 import { Routes, Route } from "react-router-dom";
-import Catalog from "./features/catalog/Catalog";
-import ProductDetailPage from "./features/product-detail/ProductDetailPage";
+import Catalog from "@/features/catalog/Catalog";
+import ProductDetailPage from "@/features/product-detail/ProductDetailPage";
 import "./App.css";
 
 function App() {

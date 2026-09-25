@@ -1,8 +1,8 @@
 import { InstantSearch } from "react-instantsearch";
-import { algolia_indices, searchClient } from "../../lib/searchClient";
-import { SearchBar } from "./components/search/SearchBar";
-import { FilterPanel } from "./components/filters/FilterPanel";
-import { ResultsPanel } from "./components/results/ResultsPanel";
+import { algolia_indices, searchClient } from "@/lib/searchClient";
+import { SearchBar } from "@/features/catalog/components/search/SearchBar";
+import { FilterPanel } from "@/features/catalog/components/filters/FilterPanel";
+import { ResultsPanel } from "@/features/catalog/components/results/ResultsPanel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { BrandHeader } from "@/components/brand-header";
 

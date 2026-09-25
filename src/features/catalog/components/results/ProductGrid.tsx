@@ -1,6 +1,6 @@
 import { useHits, useInstantSearch } from "react-instantsearch";
-import { ProductCard } from "../product/ProductCard";
-import type { ProductHit } from "../../types";
+import { ProductCard } from "@/features/catalog/components/product/ProductCard";
+import type { ProductHit } from "@/lib/types";
 
 export function ProductGrid() {
   const { items } = useHits<ProductHit>();

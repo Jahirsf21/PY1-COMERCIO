@@ -1,14 +1,8 @@
 import { SlidersHorizontalIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { FilterPanel } from "./FilterPanel";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger} from "@/components/ui/sheet";
+import { FilterPanel } from "@/features/catalog/components/filters/FilterPanel";
 
 export function MobileFilterSheet() {
   return (

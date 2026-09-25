@@ -1,8 +1,5 @@
 import { useId } from "react";
-import {
-  useRefinementList,
-  type UseRefinementListProps,
-} from "react-instantsearch";
+import { useRefinementList, type UseRefinementListProps } from "react-instantsearch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 
