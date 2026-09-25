@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
-import { ArrowLeftIcon, CheckIcon, MapPinIcon, PackageCheckIcon, StarIcon } from "lucide-react";
-import { BrandHeader } from "@/components/brand-header";
-import { cn } from "@/lib/utils";
-import type { ProductHit } from "@/lib/types";
-import { getProductVariants } from "@/features/product-detail/getProductVariants";
+import { useEffect, useState } from "react"
+import { Link, useParams, useSearchParams } from "react-router-dom"
+import { ArrowLeftIcon, CheckIcon, MapPinIcon, PackageCheckIcon, StarIcon } from "lucide-react"
+import { BrandHeader } from "@/components/brand-header"
+import { cn } from "@/lib/utils"
+import type { ProductHit } from "@/lib/types/product"
+import { getProductVariants } from "@/features/product-detail/getProductVariants"
 
 type VariantsResult = {
   productId: string;

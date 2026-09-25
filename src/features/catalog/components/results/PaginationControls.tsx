@@ -1,5 +1,5 @@
-import { usePagination } from "react-instantsearch";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { usePagination } from "react-instantsearch"
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 
 export function PaginationControls({ onPageChange }: { onPageChange: () => void }) {
   const { currentRefinement, nbPages, isFirstPage, isLastPage, refine, canRefine } = usePagination();

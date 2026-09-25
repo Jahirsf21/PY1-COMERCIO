@@ -1,8 +1,8 @@
-import { Highlight } from "react-instantsearch";
-import { Link } from "react-router-dom";
-import { StarIcon } from "lucide-react";
-import type { ProductHit } from "@/lib/types";
-import { ProductImagePreview } from "@/features/catalog/components/product/ProductImagePreview";
+import { Highlight } from "react-instantsearch"
+import { Link } from "react-router-dom"
+import { StarIcon } from "lucide-react"
+import type { ProductHit } from "@/lib/types/product"
+import { ProductImagePreview } from "@/features/catalog/components/product/ProductImagePreview"
 
 export function ProductCard({ hit }: { hit: ProductHit }) {
   return (

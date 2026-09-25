@@ -1,6 +1,6 @@
 import "dotenv/config"
-import { algoliasearch } from "algoliasearch";
-import { readFile } from "node:fs/promises";
+import { algoliasearch } from "algoliasearch"
+import { readFile } from "node:fs/promises"
 
 const app_id = process.env.VITE_ALGOLIA_APPLICATION_ID
 const admin_api_key = process.env.VITE_ALGOLIA_ADMIN_API_KEY
