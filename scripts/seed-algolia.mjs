@@ -11,8 +11,8 @@ const index_name = process.env.VITE_ALGOLIA_MAIN_INDEX
 const client = algoliasearch(app_id, admin_api_key);
 
 /**
- * A partir de un arreglo de stock por local, calcula la cantidad disponible por cada local y los totales agregados.
- * @param {Array<Omit<StockByLocation, "available_quantity">>} stock_by_location Arreglo de stock por local sin available_quantity
+ * Calcula los totales de cada local y canal a partir del stock por talla.
+ * @param {Array} stock_by_location Arreglo de locales con stock y reservas dentro de sizes.
  * @returns {{updated_locations: StockByLocation[], stock_quantity: number, reserved_quantity: number, available_quantity: number}}
  *   updated_locations: el mismo arreglo con available_quantity calculado por local.
  *   stock_quantity / reserved_quantity / available_quantity: totales agregados de todos los locales.
@@ -22,10 +22,14 @@ function process_stock_by_location(stock_by_location) {
   if (!Array.isArray(stock_by_location) || stock_by_location.length === 0) {
     return { updated_locations: [], stock_quantity: 0, reserved_quantity: 0, available_quantity: 0 }
   }
-  const updated_locations = stock_by_location.map((location) => ({
-    ...location,
-    available_quantity: location.stock_quantity - location.reserved_quantity
-  }))
+  const updated_locations = stock_by_location.map((location) => {
+    const totals = Object.values(location.sizes).reduce((acc, stock) => ({
+      stock_quantity: acc.stock_quantity + stock.stock_quantity,
+      reserved_quantity: acc.reserved_quantity + stock.reserved_quantity,
+      available_quantity: acc.available_quantity + stock.stock_quantity - stock.reserved_quantity
+    }), { stock_quantity: 0, reserved_quantity: 0, available_quantity: 0 })
+    return { ...location, ...totals }
+  })
   const totals = updated_locations.reduce((acc, location) => ({
     stock_quantity: acc.stock_quantity + location.stock_quantity,
     reserved_quantity: acc.reserved_quantity + location.reserved_quantity,
@@ -38,7 +42,7 @@ function process_stock_by_location(stock_by_location) {
 
 /**
  * Obtiene la lista de provincias sin duplicados que tienen stock disponible
- * (stock_quantity mayor a 0), combinando uno o varios arreglos de stock por local (ej. b2c y b2b).
+ * (available_quantity mayor a 0), combinando uno o varios arreglos de stock por local (ej. b2c y b2b).
  * @param {...StockByLocation[]} stock_arrays
  * @returns {string[]} Lista de provincias (province) sin duplicados con stock disponible.
  */
@@ -47,7 +51,7 @@ function get_provinces_with_stock(...stock_arrays) {
   for (const arr of stock_arrays) {
     if (!Array.isArray(arr)) continue
     for (const location of arr) {
-      if (location.stock_quantity > 0) provinces.add(location.province)
+      if (location.available_quantity > 0) provinces.add(location.province)
     }
   }
   return [...provinces]
@@ -65,13 +69,15 @@ function is_currently_on_discount(discount) {
   const ends_at = new Date(discount.ends_at).getTime()
   return starts_at <= now && ends_at >= now
 }
+
 /**
  * Lee y parsea el archivo JSON con los records a indexar.
  * Por cada record:
  * - Si no tiene objectID, se le asigna el sku como identificador.
  * - Si no tiene image, la toma de la primera imagen del array images
- * - Calcula el stock por local (b2c y b2b) con sus cantidades disponibles, reservadas y totales.
+ * - Calcula el stock por talla, local y canal (b2c y b2b) con sus cantidades disponibles, reservadas y totales.
  * - Pone en cero los campos de precio/stock/ del canal (b2b o b2c) que el producto no vende.
+ * - Genera facets.size para el filtro de Algolia a partir de las tallas del stock.
  * - Calcula total_stock_quantity, in_stock_b2c, in_stock_b2b, provinces y on_discount.
  * @returns {Promise<ProductRecord[]>} Arreglo de records
  * @throws {Error} Si el archivo no contiene un array válido.
@@ -121,9 +127,13 @@ async function get_records() {
       record.b2b_step_quantity = 0;
       record.b2b_stock_by_location = [];
     }
+    record.facets.size = [...new Set([
+      ...record.b2c_stock_by_location,
+      ...record.b2b_stock_by_location
+    ].flatMap(location => Object.keys(location.sizes)))]
     record.total_stock_quantity = record.b2c_stock_quantity + record.b2b_stock_quantity
-    record.in_stock_b2c = record.b2c_stock_quantity > 0
-    record.in_stock_b2b = record.b2b_stock_quantity > 0
+    record.in_stock_b2c = record.b2c_available_quantity > 0
+    record.in_stock_b2b = record.b2b_available_quantity > 0
     record.provinces = get_provinces_with_stock(record.b2c_stock_by_location, record.b2b_stock_by_location)
     record.on_discount = is_currently_on_discount(record.b2c_discount)
   });
