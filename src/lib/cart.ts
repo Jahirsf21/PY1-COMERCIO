@@ -32,21 +32,13 @@ export function get_item_subtotal(item: CartItem): number {
 }
 
 /**
- * Verifica si un producto tiene unidades B2C disponibles para agregarse al carrito.
- * @param {CartProduct} product Producto que se desea agregar.
- * @returns {boolean} true si existe al menos una unidad disponible.
- */
-export function can_add_product(product: CartProduct): boolean {
-  return product.b2c_available_quantity > 0
-}
-
-/**
- * Verifica si una línea del carrito puede aumentar una unidad sin superar el inventario disponible.
+ * Verifica si una línea puede aumentar una unidad usando un límite de stock recién consultado.
  * @param {CartItem} item Producto almacenado en el carrito.
- * @returns {boolean} true si la siguiente unidad no supera available_quantity.
+ * @param {number} max_quantity Cantidad disponible consultada fuera del carrito.
+ * @returns {boolean} true si la siguiente unidad no supera max_quantity.
  */
-export function can_increment_item(item: CartItem): boolean {
-  return item.quantity + 1 <= item.available_quantity
+export function can_increment_item(item: CartItem, max_quantity: number): boolean {
+  return item.quantity + 1 <= max_quantity
 }
 
 /**
@@ -66,7 +58,6 @@ export function create_cart_item(product: CartProduct, selected_size: string): C
     unit_price: get_product_unit_price(product),
     currency: product.currency,
     quantity: 1,
-    available_quantity: product.b2c_available_quantity,
   }
 }
 
@@ -74,14 +65,15 @@ export function create_cart_item(product: CartProduct, selected_size: string): C
  * Agrega un producto al carrito o incrementa su cantidad cuando la misma variante y talla ya existen.
  * @param {CartItem[]} state Estado actual del carrito.
  * @param {CartItem} new_item Producto que se desea agregar.
+ * @param {number} max_quantity Límite de stock recién consultado.
  * @returns {CartItem[]} Estado actualizado sin superar el inventario disponible.
  */
-export function add_cart_item(state: CartItem[], new_item: CartItem): CartItem[] {
+export function add_cart_item(state: CartItem[], new_item: CartItem, max_quantity: number): CartItem[] {
   const existing_item = state.find((item) => item.id === new_item.id)
   if (!existing_item) {
-    return new_item.available_quantity > 0 ? [...state, new_item] : state
+    return new_item.quantity <= max_quantity ? [...state, new_item] : state
   }
-  return increment_cart_item(state, existing_item.id)
+  return increment_cart_item(state, existing_item.id, max_quantity)
 }
 
 /**
@@ -90,20 +82,21 @@ export function add_cart_item(state: CartItem[], new_item: CartItem): CartItem[]
  * @param {CartItem[]} state Estado actual del carrito.
  * @param {string} item_id Identificador de la línea que se actualizará.
  * @param {number} quantity Cantidad entera seleccionada por la persona usuaria.
+ * @param {number} max_quantity Límite de stock recién consultado.
  * @returns {CartItem[]} Estado actualizado del carrito.
  */
-export function set_cart_item_quantity(state: CartItem[], item_id: string, quantity: number): CartItem[] {
+export function set_cart_item_quantity(state: CartItem[], item_id: string, quantity: number, max_quantity: number): CartItem[] {
   if (!Number.isInteger(quantity)) return state
   const item = state.find((cart_item) => cart_item.id === item_id)
   if (!item) return state
   const selected_quantity = quantity
-  if (item.available_quantity < 1) return state
+  if (max_quantity < 1) return state
   if (selected_quantity < 1) {
     return state.map((cart_item) =>
       cart_item.id === item_id ? { ...cart_item, quantity: 1 } : cart_item,
     )
   }
-  const valid_quantity = Math.min(selected_quantity, item.available_quantity)
+  const valid_quantity = Math.min(selected_quantity, max_quantity)
   return state.map((cart_item) =>
     cart_item.id === item_id ? { ...cart_item, quantity: valid_quantity } : cart_item,
   )
@@ -113,11 +106,12 @@ export function set_cart_item_quantity(state: CartItem[], item_id: string, quant
  * Incrementa en una unidad una línea del carrito cuando existe inventario disponible.
  * @param {CartItem[]} state Estado actual del carrito.
  * @param {string} item_id Identificador de la línea que se incrementará.
+ * @param {number} max_quantity Límite de stock recién consultado.
  * @returns {CartItem[]} Estado actualizado del carrito.
  */
-export function increment_cart_item(state: CartItem[], item_id: string): CartItem[] {
+export function increment_cart_item(state: CartItem[], item_id: string, max_quantity: number): CartItem[] {
   return state.map((item) => {
-    if (item.id !== item_id || !can_increment_item(item)) return item
+    if (item.id !== item_id || !can_increment_item(item, max_quantity)) return item
     return { ...item, quantity: item.quantity + 1 }
   })
 }
@@ -162,11 +156,11 @@ export function clear_cart(): CartItem[] {
 export function cart_reducer(state: CartItem[], action: CartAction): CartItem[] {
   switch (action.type) {
     case "add":
-      return add_cart_item(state, action.item)
+      return add_cart_item(state, action.item, action.max_quantity)
     case "set_quantity":
-      return set_cart_item_quantity(state, action.item_id, action.quantity)
+      return set_cart_item_quantity(state, action.item_id, action.quantity, action.max_quantity)
     case "increment":
-      return increment_cart_item(state, action.item_id)
+      return increment_cart_item(state, action.item_id, action.max_quantity)
     case "decrement":
       return decrement_cart_item(state, action.item_id)
     case "remove":

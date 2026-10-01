@@ -12,47 +12,49 @@ export type CartProduct = {
   b2c_price: number
   b2c_discount?: Discount
   on_discount: boolean
-  b2c_available_quantity: number
 }
 
 /**
  * Producto seleccionado y almacenado dentro del carrito de compras
  */
 export type CartItem = {
-  id: string 
+  id: string
   product_id: string
-  sku: string 
+  sku: string
   selected_size: string
   title: string
   image: ProductImage
   unit_price: number
   currency: string
   quantity: number
-  available_quantity: number
 }
 
 /**
  * Acciones disponibles para modificar el estado del carrito
+ * max_quantity es un límite recién consultado, no un dato persistido del carrito.
  */
 export type CartAction =
   | {
     type: "add"
     item: CartItem
+    max_quantity: number
   }
   | {
     type: "set_quantity"
     item_id: string
     quantity: number
+    max_quantity: number
   }
   | {
     type: "increment"
     item_id: string
+    max_quantity: number
   }
   | {
     type: "decrement"
     item_id: string
   }
-  | { 
+  | {
     type: "remove"
     item_id: string
   }
@@ -67,10 +69,10 @@ export type CartContextValue = {
   cart: CartItem[]
   subtotal: number
   total_items: number
-  add_to_cart: (product: CartProduct, selected_size: string) => void
-  set_quantity: (item_id: string, quantity: number) => void
-  increment_item: (item_id: string) => void
+  add_to_cart: (product: CartProduct, selected_size: string) => Promise<boolean>
+  set_quantity: (item_id: string, quantity: number) => Promise<void>
+  increment_item: (item_id: string) => Promise<void>
   decrement_item: (item_id: string) => void
-  remove_item: (item_id: string) => void 
+  remove_item: (item_id: string) => void
   clear_cart: () => void
 }
