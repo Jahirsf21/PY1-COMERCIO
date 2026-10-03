@@ -74,18 +74,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
     subtotal: cart.reduce((total, item) => total + get_item_subtotal(item), 0),
     total_items: cart.reduce((total, item) => total + item.quantity, 0),
     /**
-     * Solicita agregar una unidad de la variante y talla sin superar el stock consultado.
+     * Solicita agregar la cantidad indicada de la variante y talla sin superar el stock consultado.
      * Tiene en cuenta las unidades de esa misma línea que ya están en el carrito.
      * @param product Producto que se desea agregar.
      * @param selected_size Talla seleccionada por la persona usuaria.
-     * @returns true si se envía la acción de agregar; false si el stock es insuficiente.
+     * @param quantity Cantidad de unidades que se agregarán; por defecto, una.
+     * @returns true si se envía la acción de agregar; false si la cantidad es inválida o el stock es insuficiente.
      */
-    add_to_cart: async (product: CartProduct, selected_size: string) => {
+    add_to_cart: async (product: CartProduct, selected_size: string, quantity = 1) => {
+      if (!Number.isInteger(quantity) || quantity < 1) return false
       const max_quantity = await get_current_available_quantity(product.product_id, product.sku, selected_size)
       const item_id = get_cart_item_id(product.sku, selected_size)
-      const quantity = cart.find((item) => item.id === item_id)?.quantity ?? 0
-      if (quantity + 1 > max_quantity) return false
-      dispatch({ type: "add", item: create_cart_item(product, selected_size), max_quantity })
+      const cart_quantity = cart.find((item) => item.id === item_id)?.quantity ?? 0
+      if (cart_quantity + quantity > max_quantity) return false
+      dispatch({ type: "add", item: create_cart_item(product, selected_size, quantity), max_quantity })
       return true
     },
     /**

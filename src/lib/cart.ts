@@ -43,11 +43,12 @@ export function can_increment_item(item: CartItem, max_quantity: number): boolea
 
 /**
  * Crea una línea nueva para el carrito a partir de un producto y la talla seleccionada.
- * @param {CartProduct} product Producto que se agregará al carrito.
- * @param {string} selected_size Talla seleccionada por la persona usuaria.
- * @returns {CartItem} Producto preparado para almacenarse en el carrito con cantidad inicial de uno.
+ * @param product Producto que se agregará al carrito.
+ * @param selected_size Talla seleccionada por la persona usuaria.
+ * @param quantity Cantidad inicial de unidades; por defecto, una.
+ * @returns Producto preparado para almacenarse en el carrito con la cantidad indicada.
  */
-export function create_cart_item(product: CartProduct, selected_size: string): CartItem {
+export function create_cart_item(product: CartProduct, selected_size: string, quantity = 1): CartItem {
   return {
     id: get_cart_item_id(product.sku, selected_size),
     product_id: product.product_id,
@@ -57,23 +58,29 @@ export function create_cart_item(product: CartProduct, selected_size: string): C
     image: product.image,
     unit_price: get_product_unit_price(product),
     currency: product.currency,
-    quantity: 1,
+    quantity,
   }
 }
 
 /**
- * Agrega un producto al carrito o incrementa su cantidad cuando la misma variante y talla ya existen.
- * @param {CartItem[]} state Estado actual del carrito.
- * @param {CartItem} new_item Producto que se desea agregar.
- * @param {number} max_quantity Límite de stock recién consultado.
- * @returns {CartItem[]} Estado actualizado sin superar el inventario disponible.
+ * Agrega las unidades solicitadas o las suma a la misma variante y talla si ya existen.
+ * Rechaza toda la operación si la cantidad es inválida o supera el stock consultado.
+ * @param state Estado actual del carrito.
+ * @param new_item Producto y cantidad que se desean agregar.
+ * @param max_quantity Límite de stock recién consultado.
+ * @returns Estado actualizado sin superar el inventario disponible.
  */
 export function add_cart_item(state: CartItem[], new_item: CartItem, max_quantity: number): CartItem[] {
+  if (!Number.isInteger(new_item.quantity) || new_item.quantity < 1) return state
   const existing_item = state.find((item) => item.id === new_item.id)
   if (!existing_item) {
     return new_item.quantity <= max_quantity ? [...state, new_item] : state
   }
-  return increment_cart_item(state, existing_item.id, max_quantity)
+  const quantity = existing_item.quantity + new_item.quantity
+  if (quantity > max_quantity) return state
+  return state.map((item) =>
+    item.id === existing_item.id ? { ...item, quantity } : item,
+  )
 }
 
 /**
