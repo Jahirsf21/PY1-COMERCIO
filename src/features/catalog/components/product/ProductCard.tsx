@@ -4,6 +4,7 @@ import { StarIcon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import type { ProductHit } from "@/lib/types/product"
 import { ProductImagePreview } from "@/features/catalog/components/product/ProductImagePreview"
+import { AddToCartDialog } from "@/features/catalog/components/product/AddToCartDialog"
 
 export function ProductCard({ hit }: { hit: ProductHit }) {
   return (
@@ -40,6 +41,7 @@ export function ProductCard({ hit }: { hit: ProductHit }) {
         </p>
       </CardContent>
       <CardFooter className="mt-auto flex-col gap-2">
+        <AddToCartDialog hit={hit} />
         <Link
           to={`/producto/${encodeURIComponent(hit.product_id)}?variante=${encodeURIComponent(hit.sku)}`}
           className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-input px-4 py-2 text-sm font-medium transition-colors hover:border-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 import type { VariantsResult } from "@/lib/types/product"
 import { getProductVariants } from "@/lib/getProductVariants"
 import { getAvailableQuantityBySize, getSizesFromStock } from "@/lib/getProductStock"
+import { AddToCartForm } from "@/features/product-detail/AddToCartForm"
 
 function formatPrice(value: number, currency: string) {
   return new Intl.NumberFormat("es-CR", {
@@ -37,6 +38,7 @@ export default function ProductDetailPage() {
   const { productId = "" } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const [result, setResult] = useState<VariantsResult>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selection, setSelection] = useState<{
     sku: string | null;
     imageIndex: number;
@@ -222,8 +224,9 @@ export default function ProductDetailPage() {
                     type="button"
                     aria-pressed={variant.sku === selectedVariant.sku}
                     aria-label={`Color ${variant.facets.color}`}
+                    disabled={isSubmitting}
                     className={cn(
-                      "cursor-pointer overflow-hidden rounded-lg border-2 bg-muted outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
+                      "cursor-pointer overflow-hidden rounded-lg border-2 bg-muted outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
                       variant.sku === selectedVariant.sku
                         ? "border-foreground"
                         : "border-transparent hover:border-ring",
@@ -257,8 +260,9 @@ export default function ProductDetailPage() {
                     key={size}
                     type="button"
                     aria-pressed={selectedSize === size}
+                    disabled={isSubmitting}
                     className={cn(
-                      "min-h-12 cursor-pointer rounded-md border px-2 py-2 text-sm outline-none transition-colors hover:border-foreground focus-visible:ring-2 focus-visible:ring-ring",
+                      "min-h-12 cursor-pointer rounded-md border px-2 py-2 text-sm outline-none transition-colors hover:border-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
                       selectedSize === size
                         ? "border-foreground bg-foreground text-background"
                         : "border-input",
@@ -293,6 +297,14 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
+            <AddToCartForm
+              key={`${selectedVariant.product_id}::${selectedVariant.sku}::${selectedSize ?? ""}`}
+              product={selectedVariant}
+              selectedSize={selectedSize}
+              availableQuantity={availableQuantity}
+              isSubmitting={isSubmitting}
+              onSubmittingChange={setIsSubmitting}
+            />
           </aside>
         </div>
 
