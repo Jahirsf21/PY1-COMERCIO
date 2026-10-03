@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react"
 import { Link, useParams, useSearchParams } from "react-router-dom"
 import { ArrowLeftIcon, CheckIcon, MapPinIcon, PackageCheckIcon, StarIcon } from "lucide-react"
-import { BrandHeader } from "@/components/brand-header"
-import { cn } from "@/lib/utils"
+import { cn } from "cn"
 import type { VariantsResult } from "@/lib/types/product"
 import { getProductVariants } from "@/lib/getProductVariants"
 import { getAvailableQuantityBySize, getSizesFromStock } from "@/lib/getProductStock"
 import { AddToCartForm } from "@/features/product-detail/AddToCartForm"
+import { ShopHeader } from "@/components/shop-header"
 
 function formatPrice(value: number, currency: string) {
   return new Intl.NumberFormat("es-CR", {
@@ -80,7 +80,7 @@ export default function ProductDetailPage() {
   if (isLoading) {
     return (
       <div className="min-h-dvh bg-background">
-        <SiteHeader />
+        <ShopHeader />
         <ProductDetailSkeleton />
       </div>
     );
@@ -89,7 +89,7 @@ export default function ProductDetailPage() {
   if (result.error || !selectedVariant) {
     return (
       <div className="min-h-dvh bg-background">
-        <SiteHeader />
+        <ShopHeader />
         <main className="mx-auto flex max-w-xl flex-col items-center px-4 py-24 text-center">
           <h1 className="text-2xl font-semibold">Producto no disponible</h1>
           <p className="mt-3 text-muted-foreground">
@@ -125,7 +125,7 @@ export default function ProductDetailPage() {
 
   return (
     <div className="min-h-dvh bg-background">
-      <SiteHeader />
+      <ShopHeader />
       <main className="mx-auto w-full max-w-[1440px] px-4 py-5 lg:px-8 lg:py-8">
         <Link
           to="/"
@@ -368,18 +368,6 @@ export default function ProductDetailPage() {
         </section>
       </main>
     </div>
-  );
-}
-
-function SiteHeader() {
-  return (
-    <header className="border-b border-input px-4 py-3 lg:px-8">
-      <div className="mx-auto max-w-[1440px]">
-        <Link to="/" aria-label="SPACE, volver al catálogo" className="inline-flex">
-          <BrandHeader heading={false} />
-        </Link>
-      </div>
-    </header>
   );
 }
 

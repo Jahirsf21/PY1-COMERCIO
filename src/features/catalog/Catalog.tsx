@@ -4,7 +4,7 @@ import { SearchBar } from "@/features/catalog/components/search/SearchBar"
 import { FilterPanel } from "@/features/catalog/components/filters/FilterPanel"
 import { ResultsPanel } from "@/features/catalog/components/results/ResultsPanel"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { BrandHeader } from "@/components/brand-header"
+import { ShopHeader } from "@/components/shop-header"
 
 export default function Catalog() {
   return (
@@ -14,9 +14,7 @@ export default function Catalog() {
       routing
     >
       <div className="flex h-dvh flex-col">
-        <header className="flex shrink-0 items-center gap-3 border-b border-input px-4 py-3 lg:px-6">
-          <BrandHeader />
-        </header>
+        <ShopHeader />
         <div className="shrink-0 border-b border-input px-4 py-4 lg:px-6">
           <SearchBar />
         </div>
