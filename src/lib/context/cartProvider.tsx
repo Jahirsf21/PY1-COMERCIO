@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useReducer } from "react"
 import type { ReactNode } from "react"
 import type { CartContextValue, CartItem, CartProduct } from "@/lib/types/cart"
-import { can_increment_item, cart_reducer, create_cart_item, get_cart_item_id, get_cart_subtotal, get_cart_total_units } from "@/lib/cart"
+import { can_increment_item, cart_reducer, create_cart_item, get_cart_item_id, get_cart_shipping_cost, get_cart_subtotal, get_cart_tax, get_cart_total, get_cart_total_units } from "@/lib/cart"
 import { getProductVariants } from "@/lib/getProductVariants"
 import { getAvailableQuantityBySize } from "@/lib/getProductStock"
 import CartContext from "@/lib/context/cartContext"
@@ -50,7 +50,7 @@ async function get_current_available_quantity(product_id: string, sku: string, s
 
 /**
  * Provee el estado global del carrito y sus acciones a los componentes descendientes.
- * Guarda los cambios en localStorage y calcula el subtotal y el total de unidades.
+ * Guarda los cambios en localStorage y calcula el subtotal, el envío, el impuesto, el total y el total de unidades.
  * Consulta el stock antes de agregar productos o aumentar sus cantidades.
  * @param props Propiedades del proveedor.
  * @param props.children Componentes que podrán consumir el contexto.
@@ -72,6 +72,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const value = useMemo<CartContextValue>(() => ({
     cart,
     subtotal: get_cart_subtotal(cart),
+    shipping: get_cart_shipping_cost(cart),
+    tax: get_cart_tax(cart),
+    total: get_cart_total(cart),
     total_items: get_cart_total_units(cart),
     /**
      * Solicita agregar la cantidad indicada de la variante y talla sin superar el stock consultado.
