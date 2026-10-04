@@ -25,6 +25,11 @@ El proyecto contempla:
 
 - Cada producto cuenta con una ficha individual que incluye sus variantes de color y talla. Por ello, el botón **Agregar al carrito** abre un diálogo para seleccionar el color y la talla antes de agregar la variante elegida al carrito.
 
+## Justificación del costo de envío
+
+- Se realizó una investigación de mercado en diferentes sitios web que venden productos similares a los de nuestro e-commerce. Se determinó que la mayoría maneja un **precio estándar de 3,000 colones**, el cual es cobrado por el repartidor o la empresa de envíos. 
+- Adicionalmente, se estableció como regla de negocio que, **al superar un monto de 35,000 colones**, se otorga un incentivo al cliente (como envío gratuito) para fomentar, premiar y facilitar su decisión de compra.
+
 ## Enlaces
 
 - **Aplicación:** https://jahirsf21.github.io/PY1-COMERCIO/
