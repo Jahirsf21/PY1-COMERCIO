@@ -11,7 +11,7 @@ function formatPrice(value: number, currency: string) {
 }
 
 export default function CartPage() {
-  const { cart, subtotal, total_items: totalUnits } = useCart()
+  const { cart, subtotal, shipping, tax, total, total_items: totalUnits } = useCart()
 
   return (
     <div className="min-h-dvh bg-background">
@@ -85,14 +85,28 @@ export default function CartPage() {
             </ul>
             <aside className="min-w-0 rounded-xl border border-input bg-card p-5 lg:sticky lg:top-6">
               <h2 className="text-lg font-semibold">Resumen de compra</h2>
-              <div className="mt-4 flex items-center justify-between gap-3 border-b border-input pb-4 text-sm">
-                <span className="text-muted-foreground">Unidades</span>
-                <span className="font-medium">{totalUnits}</span>
-              </div>
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-                <span className="font-medium">Subtotal</span>
-                <span className="break-words text-lg font-semibold">{formatPrice(subtotal, cart[0].currency)}</span>
-              </div>
+              <dl className="mt-4 space-y-3 text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">Unidades</dt>
+                  <dd className="font-medium">{totalUnits}</dd>
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                  <dt className="text-muted-foreground">Subtotal</dt>
+                  <dd className="break-words font-medium">{formatPrice(subtotal, cart[0].currency)}</dd>
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                  <dt className="text-muted-foreground">Impuestos (13 %)</dt>
+                  <dd className="break-words font-medium">{formatPrice(tax, cart[0].currency)}</dd>
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                  <dt className="text-muted-foreground">Envío</dt>
+                  <dd className="break-words font-medium">{shipping === 0 ? "Gratis" : formatPrice(shipping, cart[0].currency)}</dd>
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-input pt-4">
+                  <dt className="text-base font-semibold">Total</dt>
+                  <dd className="break-words text-lg font-semibold">{formatPrice(total, cart[0].currency)}</dd>
+                </div>
+              </dl>
             </aside>
           </div>
         )}
