@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useReducer } from "react"
 import type { ReactNode } from "react"
 import type { CartContextValue, CartItem, CartProduct } from "@/lib/types/cart"
-import { cart_reducer, create_cart_item, get_cart_item_id, get_item_subtotal } from "@/lib/cart"
+import { cart_reducer, create_cart_item, get_cart_item_id, get_cart_subtotal, get_cart_total_units } from "@/lib/cart"
 import { getProductVariants } from "@/lib/getProductVariants"
 import { getAvailableQuantityBySize } from "@/lib/getProductStock"
 import CartContext from "@/lib/context/cartContext"
@@ -71,8 +71,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // Recalcula los totales y las acciones del contexto cuando cambia el carrito.
   const value = useMemo<CartContextValue>(() => ({
     cart,
-    subtotal: cart.reduce((total, item) => total + get_item_subtotal(item), 0),
-    total_items: cart.reduce((total, item) => total + item.quantity, 0),
+    subtotal: get_cart_subtotal(cart),
+    total_items: get_cart_total_units(cart),
     /**
      * Solicita agregar la cantidad indicada de la variante y talla sin superar el stock consultado.
      * Tiene en cuenta las unidades de esa misma línea que ya están en el carrito.
