@@ -3,8 +3,7 @@ import { ShoppingCartIcon } from "lucide-react"
 import { useCart } from "@/lib/context/useCart"
 
 export function CartIndicator() {
-  const { cart } = useCart()
-  const totalUnits = cart.reduce((total, item) => total + item.quantity, 0)
+  const { total_items: totalUnits } = useCart()
 
   return (
     <Link

@@ -9,12 +9,7 @@ function formatPrice(value: number, currency: string) {
 }
 
 export default function CartPage() {
-  const { cart } = useCart()
-  const totalUnits = cart.reduce((total, item) => total + item.quantity, 0)
-  const totalsByCurrency = cart.reduce<Record<string, number>>((totals, item) => {
-    totals[item.currency] = (totals[item.currency] ?? 0) + get_item_subtotal(item)
-    return totals
-  }, {})
+  const { cart, subtotal, total_items: totalUnits } = useCart()
 
   return (
     <div className="min-h-dvh bg-background">
@@ -87,12 +82,10 @@ export default function CartPage() {
                 <span className="text-muted-foreground">Unidades</span>
                 <span className="font-medium">{totalUnits}</span>
               </div>
-              {Object.entries(totalsByCurrency).map(([currency, total]) => (
-                <div key={currency} className="mt-4 flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-medium">Subtotal{Object.keys(totalsByCurrency).length > 1 ? ` (${currency})` : ""}</span>
-                  <span className="break-words text-lg font-semibold">{formatPrice(total, currency)}</span>
-                </div>
-              ))}
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+                <span className="font-medium">Subtotal</span>
+                <span className="break-words text-lg font-semibold">{formatPrice(subtotal, cart[0].currency)}</span>
+              </div>
             </aside>
           </div>
         )}
