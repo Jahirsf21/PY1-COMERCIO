@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useReducer } from "react"
 import type { ReactNode } from "react"
 import type { CartContextValue, CartItem, CartProduct } from "@/lib/types/cart"
-import { cart_reducer, create_cart_item, get_cart_item_id, get_cart_subtotal, get_cart_total_units } from "@/lib/cart"
+import { can_increment_item, cart_reducer, create_cart_item, get_cart_item_id, get_cart_subtotal, get_cart_total_units } from "@/lib/cart"
 import { getProductVariants } from "@/lib/getProductVariants"
 import { getAvailableQuantityBySize } from "@/lib/getProductStock"
 import CartContext from "@/lib/context/cartContext"
@@ -107,12 +107,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
      * Solicita aumentar una unidad usando el stock actual de la variante y la talla.
      * El reducer mantiene la cantidad si la siguiente unidad supera el stock consultado.
      * @param item_id Identificador de la línea que se incrementará.
+     * @returns true si hay stock para la siguiente unidad; false si la línea no existe o se alcanzó el límite.
      */
     increment_item: async (item_id: string) => {
       const item = cart.find((product) => product.id === item_id)
-      if (!item) return
+      if (!item) return false
       const max_quantity = await get_current_available_quantity(item.product_id, item.sku, item.selected_size)
       dispatch({ type: "increment", item_id, max_quantity })
+      return can_increment_item(item, max_quantity)
     },
     /**
      * Reduce una unidad de la línea sin permitir cantidades inferiores a uno.
