@@ -71,7 +71,7 @@ export type CartContextValue = {
   total_items: number
   add_to_cart: (product: CartProduct, selected_size: string, quantity?: number) => Promise<boolean>
   set_quantity: (item_id: string, quantity: number) => Promise<void>
-  increment_item: (item_id: string) => Promise<void>
+  increment_item: (item_id: string) => Promise<boolean>
   decrement_item: (item_id: string) => void
   remove_item: (item_id: string) => void
   clear_cart: () => void
