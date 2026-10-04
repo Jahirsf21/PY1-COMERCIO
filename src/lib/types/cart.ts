@@ -68,6 +68,9 @@ export type CartAction =
 export type CartContextValue = {
   cart: CartItem[]
   subtotal: number
+  shipping: number
+  tax: number
+  total: number
   total_items: number
   add_to_cart: (product: CartProduct, selected_size: string, quantity?: number) => Promise<boolean>
   set_quantity: (item_id: string, quantity: number) => Promise<void>

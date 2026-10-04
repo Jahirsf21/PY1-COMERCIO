@@ -41,6 +41,40 @@ export function get_cart_subtotal(cart: CartItem[]): number {
 }
 
 /**
+ * Calcula el costo de envío según el subtotal del carrito.
+ * @param {CartItem[]} cart Productos almacenados en el carrito.
+ * @returns {number} 3.000 colones si el subtotal es menor que 35.000; cero si lo alcanza o el carrito está vacío.
+ */
+export function get_cart_shipping_cost(cart: CartItem[]): number {
+  if (cart.length === 0) {
+    return 0
+  }
+  const subtotal = get_cart_subtotal(cart)
+  if (subtotal < 35000) {
+    return 3000
+  }
+  return 0
+}
+
+/**
+ * Calcula el impuesto del 13 % sobre el subtotal del carrito.
+ * @param {CartItem[]} cart Productos almacenados en el carrito.
+ * @returns {number} Monto del impuesto, o cero si el carrito está vacío.
+ */
+export function get_cart_tax(cart: CartItem[]): number {
+  return get_cart_subtotal(cart) * 0.13
+}
+
+/**
+ * Calcula el total del carrito sumando el subtotal, el impuesto y el costo de envío.
+ * @param {CartItem[]} cart Productos almacenados en el carrito.
+ * @returns {number} Total a pagar, o cero si el carrito está vacío.
+ */
+export function get_cart_total(cart: CartItem[]): number {
+  return get_cart_subtotal(cart) + get_cart_tax(cart) + get_cart_shipping_cost(cart)
+}
+
+/**
  * Calcula el total de unidades del carrito sumando las cantidades de sus líneas.
  * @param {CartItem[]} cart Productos almacenados en el carrito.
  * @returns {number} Total de unidades, o cero si el carrito está vacío.
