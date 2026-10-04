@@ -3,6 +3,8 @@ import { ArrowLeftIcon, ShoppingCartIcon } from "lucide-react"
 import { ShopHeader } from "@/components/shop-header"
 import { useCart } from "@/lib/context/useCart"
 import { get_item_subtotal } from "@/lib/cart"
+import { CartQuantityStepper } from "@/features/cart/components/CartQuantityStepper"
+import { RemoveCartItemDialog } from "@/features/cart/components/RemoveCartItemDialog"
 
 function formatPrice(value: number, currency: string) {
   return new Intl.NumberFormat("es-CR", { style: "currency", currency }).format(value)
@@ -50,14 +52,17 @@ export default function CartPage() {
               {cart.map((item) => (
                 <li key={item.id} className="grid gap-4 rounded-xl border border-input bg-card p-4 sm:grid-cols-[96px_minmax(0,1fr)]">
                   <img src={item.image.url} alt={item.image.alt} className="size-24 rounded-lg bg-muted object-contain" loading="lazy" />
-                  <div className="min-w-0">
-                    <Link
-                      to={`/producto/${encodeURIComponent(item.product_id)}?${new URLSearchParams({ variante: item.sku, talla: item.selected_size })}`}
-                      className="rounded-sm font-medium leading-snug break-words hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      {item.title}
-                    </Link>
-                    <p className="mt-2 text-sm text-muted-foreground">Talla: {item.selected_size}</p>
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <Link
+                        to={`/producto/${encodeURIComponent(item.product_id)}?${new URLSearchParams({ variante: item.sku, talla: item.selected_size })}`}
+                        className="rounded-sm font-medium leading-snug break-words hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        {item.title}
+                      </Link>
+                      <p className="mt-2 text-sm text-muted-foreground">Talla: {item.selected_size}</p>
+                    </div>
+                    <RemoveCartItemDialog item={item} />
                   </div>
                   <dl className="grid grid-cols-2 gap-4 border-t border-input pt-4 sm:col-span-2 sm:grid-cols-3">
                     <div className="min-w-0">
@@ -66,7 +71,9 @@ export default function CartPage() {
                     </div>
                     <div>
                       <dt className="text-xs text-muted-foreground">Cantidad</dt>
-                      <dd className="mt-1 text-sm font-medium">{item.quantity}</dd>
+                      <dd className="mt-1">
+                        <CartQuantityStepper item={item} />
+                      </dd>
                     </div>
                     <div className="col-span-2 min-w-0 sm:col-span-1">
                       <dt className="text-xs text-muted-foreground">Subtotal</dt>
