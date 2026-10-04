@@ -32,6 +32,24 @@ export function get_item_subtotal(item: CartItem): number {
 }
 
 /**
+ * Calcula el subtotal del carrito cuyos productos comparten la misma moneda.
+ * @param {CartItem[]} cart Productos almacenados en el carrito.
+ * @returns {number} Suma de los subtotales de las líneas, o cero si el carrito está vacío.
+ */
+export function get_cart_subtotal(cart: CartItem[]): number {
+  return cart.reduce((total, item) => total + get_item_subtotal(item), 0)
+}
+
+/**
+ * Calcula el total de unidades del carrito sumando las cantidades de sus líneas.
+ * @param {CartItem[]} cart Productos almacenados en el carrito.
+ * @returns {number} Total de unidades, o cero si el carrito está vacío.
+ */
+export function get_cart_total_units(cart: CartItem[]): number {
+  return cart.reduce((total, item) => total + item.quantity, 0)
+}
+
+/**
  * Verifica si una línea puede aumentar una unidad usando un límite de stock recién consultado.
  * @param {CartItem} item Producto almacenado en el carrito.
  * @param {number} max_quantity Cantidad disponible consultada fuera del carrito.
