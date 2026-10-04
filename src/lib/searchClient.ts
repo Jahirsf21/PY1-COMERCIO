@@ -1,4 +1,4 @@
-import { liteClient as algoliasearch } from "algoliasearch/lite";
+import { liteClient as algoliasearch } from "algoliasearch/lite"
 
 //Credenciales para usar el cliente de algoliasearch
 const app_id = import.meta.env.VITE_ALGOLIA_APPLICATION_ID;

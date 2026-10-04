@@ -1,21 +1,12 @@
 import { ScrollArea as ScrollAreaPrimitive } from "@base-ui/react/scroll-area"
-import { useEffect, useRef } from "react"
 
 import { cn } from "@/lib/utils"
-import { smoothWheelScroll } from "@/lib/smooth-wheel-scroll"
 
 function ScrollArea({
   className,
   children,
   ...props
 }: ScrollAreaPrimitive.Root.Props) {
-  const viewportRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const viewport = viewportRef.current
-    if (viewport) return smoothWheelScroll(viewport)
-  }, [])
-
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
@@ -23,7 +14,6 @@ function ScrollArea({
       {...props}
     >
       <ScrollAreaPrimitive.Viewport
-        ref={viewportRef}
         data-slot="scroll-area-viewport"
         className="size-full overscroll-contain scroll-auto rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1"
       >

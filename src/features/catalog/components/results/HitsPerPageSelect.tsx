@@ -1,7 +1,7 @@
-import { useId } from "react";
-import { useHitsPerPage } from "react-instantsearch";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useId } from "react"
+import { useHitsPerPage } from "react-instantsearch"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 const HITS_PER_PAGE_ITEMS = [
   { label: "10 por página", value: 10, default: true },

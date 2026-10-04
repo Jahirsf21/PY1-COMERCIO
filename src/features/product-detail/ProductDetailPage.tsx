@@ -1,22 +1,12 @@
-import { useEffect, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
-import {
-  ArrowLeftIcon,
-  CheckIcon,
-  MapPinIcon,
-  PackageCheckIcon,
-  StarIcon,
-} from "lucide-react";
-import { BrandHeader } from "@/components/brand-header";
-import { cn } from "@/lib/utils";
-import type { ProductHit } from "@/features/catalog/types";
-import { getProductVariants } from "./getProductVariants";
-
-type VariantsResult = {
-  productId: string;
-  variants: ProductHit[];
-  error: boolean;
-};
+import { useEffect, useState } from "react"
+import { Link, useParams, useSearchParams } from "react-router-dom"
+import { ArrowLeftIcon, CheckIcon, MapPinIcon, PackageCheckIcon, StarIcon } from "lucide-react"
+import { cn } from "cn"
+import type { VariantsResult } from "@/lib/types/product"
+import { getProductVariants } from "@/lib/getProductVariants"
+import { getAvailableQuantityBySize, getSizesFromStock } from "@/lib/getProductStock"
+import { AddToCartForm } from "@/features/product-detail/AddToCartForm"
+import { ShopHeader } from "@/components/shop-header"
 
 function formatPrice(value: number, currency: string) {
   return new Intl.NumberFormat("es-CR", {
@@ -48,13 +38,12 @@ export default function ProductDetailPage() {
   const { productId = "" } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const [result, setResult] = useState<VariantsResult>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selection, setSelection] = useState<{
     sku: string | null;
-    size: string | null;
     imageIndex: number;
   }>({
     sku: null,
-    size: null,
     imageIndex: 0,
   });
 
@@ -77,17 +66,21 @@ export default function ProductDetailPage() {
   const isLoading = result?.productId !== productId;
   const variants = isLoading ? [] : result.variants;
   const requestedSku = searchParams.get("variante");
+  const requestedSize = searchParams.get("talla");
   const selectedVariant =
-    variants.find((variant) => variant.sku === selection.sku) ??
     variants.find((variant) => variant.sku === requestedSku) ??
     variants[0];
+  const stockByLocation = selectedVariant?.b2c_stock_by_location ?? [];
+  const sizes = getSizesFromStock(stockByLocation);
   const selectedSize =
-    selection.sku === selectedVariant?.sku ? selection.size : null;
+    selectedVariant?.sku === requestedSku && requestedSize && sizes.includes(requestedSize)
+      ? requestedSize
+      : null;
 
   if (isLoading) {
     return (
       <div className="min-h-dvh bg-background">
-        <SiteHeader />
+        <ShopHeader />
         <ProductDetailSkeleton />
       </div>
     );
@@ -96,7 +89,7 @@ export default function ProductDetailPage() {
   if (result.error || !selectedVariant) {
     return (
       <div className="min-h-dvh bg-background">
-        <SiteHeader />
+        <ShopHeader />
         <main className="mx-auto flex max-w-xl flex-col items-center px-4 py-24 text-center">
           <h1 className="text-2xl font-semibold">Producto no disponible</h1>
           <p className="mt-3 text-muted-foreground">
@@ -126,15 +119,17 @@ export default function ProductDetailPage() {
   const currentPrice = discount
     ? selectedVariant.b2c_price * (1 - discount.percentage / 100)
     : selectedVariant.b2c_price;
-  const isAvailable = selectedVariant.b2c_available_quantity > 0;
+  const availableSizes = sizes.filter((size) => getAvailableQuantityBySize(stockByLocation, size) > 0).length;
+  const availableQuantity = selectedSize ? getAvailableQuantityBySize(stockByLocation, selectedSize) : 0;
+  const isAvailable = availableQuantity > 0;
 
   return (
     <div className="min-h-dvh bg-background">
-      <SiteHeader />
+      <ShopHeader />
       <main className="mx-auto w-full max-w-[1440px] px-4 py-5 lg:px-8 lg:py-8">
         <Link
           to="/"
-          className="mb-5 inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="mb-5 inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <ArrowLeftIcon aria-hidden="true" className="size-4" />
           Volver al catálogo
@@ -157,7 +152,6 @@ export default function ProductDetailPage() {
                   )}
                   onClick={() => setSelection({
                     sku: selectedVariant.sku,
-                    size: selectedSize,
                     imageIndex: index,
                   })}
                 >
@@ -226,18 +220,19 @@ export default function ProductDetailPage() {
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4">
                 {variants.map((variant) => (
                   <button
-                    key={variant.sku}
+                    key={variant.objectID}
                     type="button"
                     aria-pressed={variant.sku === selectedVariant.sku}
                     aria-label={`Color ${variant.facets.color}`}
+                    disabled={isSubmitting}
                     className={cn(
-                      "cursor-pointer overflow-hidden rounded-lg border-2 bg-muted outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
+                      "cursor-pointer overflow-hidden rounded-lg border-2 bg-muted outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
                       variant.sku === selectedVariant.sku
                         ? "border-foreground"
                         : "border-transparent hover:border-ring",
                     )}
                     onClick={() => {
-                      setSelection({ sku: variant.sku, size: null, imageIndex: 0 });
+                      setSelection({ sku: variant.sku, imageIndex: 0 });
                       setSearchParams({ variante: variant.sku }, { replace: true });
                     }}
                   >
@@ -256,26 +251,26 @@ export default function ProductDetailPage() {
               <div className="mb-3 flex items-center justify-between gap-3">
                 <h2 id="size-title" className="font-medium">Selecciona una talla</h2>
                 <span className="text-xs text-muted-foreground">
-                  {selectedVariant.facets.size.length} disponibles
+                  {availableSizes} disponibles
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {selectedVariant.facets.size.map((size) => (
+                {sizes.map((size) => (
                   <button
                     key={size}
                     type="button"
                     aria-pressed={selectedSize === size}
+                    disabled={isSubmitting}
                     className={cn(
-                      "min-h-12 cursor-pointer rounded-md border px-2 py-2 text-sm outline-none transition-colors hover:border-foreground focus-visible:ring-2 focus-visible:ring-ring",
+                      "min-h-12 cursor-pointer rounded-md border px-2 py-2 text-sm outline-none transition-colors hover:border-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
                       selectedSize === size
                         ? "border-foreground bg-foreground text-background"
                         : "border-input",
                     )}
-                    onClick={() => setSelection({
-                      sku: selectedVariant.sku,
-                      size,
-                      imageIndex: selectedImageIndex,
-                    })}
+                    onClick={() => {
+                      setSelection({ sku: selectedVariant.sku, imageIndex: selectedImageIndex });
+                      setSearchParams({ variante: selectedVariant.sku, talla: size }, { replace: true });
+                    }}
                   >
                     {size}
                   </button>
@@ -285,21 +280,31 @@ export default function ProductDetailPage() {
 
             <div className={cn(
               "flex items-center gap-3 rounded-lg border p-4",
-              isAvailable ? "border-input" : "border-destructive/40 bg-destructive/5",
+              !selectedSize || isAvailable ? "border-input" : "border-destructive/40 bg-destructive/5",
             )}>
               <PackageCheckIcon aria-hidden="true" className="size-5 shrink-0" />
               <div>
                 <p className="font-medium">
-                  {isAvailable ? "Disponible" : "Temporalmente agotado"}
+                  {!selectedSize ? "Selecciona una talla" : isAvailable ? "Disponible" : "Temporalmente agotado"}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {isAvailable
-                    ? `${selectedVariant.b2c_available_quantity} unidades disponibles`
-                    : "Prueba con otro color"}
+                  {!selectedSize
+                    ? "La disponibilidad depende del color y la talla."
+                    : isAvailable
+                      ? `${availableQuantity} unidades disponibles`
+                      : "Prueba con otra talla o color"}
                 </p>
               </div>
             </div>
 
+            <AddToCartForm
+              key={`${selectedVariant.product_id}::${selectedVariant.sku}::${selectedSize ?? ""}`}
+              product={selectedVariant}
+              selectedSize={selectedSize}
+              availableQuantity={availableQuantity}
+              isSubmitting={isSubmitting}
+              onSubmittingChange={setIsSubmitting}
+            />
           </aside>
         </div>
 
@@ -335,14 +340,14 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-          {selectedVariant.b2c_stock_by_location.length > 0 && (
+          {selectedSize && stockByLocation.length > 0 && (
             <div className="mt-8 border-t border-input pt-8">
               <h2 className="flex items-center gap-2 text-xl font-semibold">
                 <MapPinIcon aria-hidden="true" className="size-5" />
                 Disponibilidad por tienda
               </h2>
               <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-                {selectedVariant.b2c_stock_by_location.map((location) => (
+                {stockByLocation.map((location) => (
                   <li
                     key={`${location.province}-${location.locale_name}`}
                     className="flex items-start justify-between gap-4 rounded-lg bg-muted/60 p-4 text-sm"
@@ -353,7 +358,7 @@ export default function ProductDetailPage() {
                     </div>
                     <span className="flex items-center gap-1 whitespace-nowrap">
                       <CheckIcon aria-hidden="true" className="size-4" />
-                      {location.available_quantity} disponibles
+                      {getAvailableQuantityBySize([location], selectedSize)} disponibles
                     </span>
                   </li>
                 ))}
@@ -363,18 +368,6 @@ export default function ProductDetailPage() {
         </section>
       </main>
     </div>
-  );
-}
-
-function SiteHeader() {
-  return (
-    <header className="border-b border-input px-4 py-3 lg:px-8">
-      <div className="mx-auto max-w-[1440px]">
-        <Link to="/" aria-label="SPACE, volver al catálogo" className="inline-flex">
-          <BrandHeader heading={false} />
-        </Link>
-      </div>
-    </header>
   );
 }
 

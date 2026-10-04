@@ -23,11 +23,20 @@ export type ProductImage = {
 }
 
 /**
+ * Stock de una talla concreta
+ */
+export type StockBySize = {
+  stock_quantity: number
+  reserved_quantity: number
+}
+
+/**
  * Stock de un local puntual dentro de una provincia
  */
 export type StockByLocation = {
   province: string
   locale_name: string
+  sizes: Record<string, StockBySize>
   stock_quantity: number
   reserved_quantity: number
   available_quantity: number
@@ -85,6 +94,12 @@ export type ProductRecord = {
   b2b_stock_by_location: StockByLocation[]
   provinces: string[]
   facets: ProductFacets
+}
+
+export type VariantsResult = {
+  productId: string
+  variants: ProductHit[]
+  error: boolean
 }
 
 export type ProductHit = Hit<ProductRecord>

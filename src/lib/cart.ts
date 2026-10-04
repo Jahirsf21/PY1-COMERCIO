@@ -1,0 +1,230 @@
+import type { CartProduct, CartItem, CartAction } from "@/lib/types/cart"
+
+/**
+ * Construye el identificador único de una línea del carrito usando la variante y la talla seleccionada.
+ * @param {string} sku Identificador de la variante del producto.
+ * @param {string} selected_size Talla seleccionada por la persona usuaria.
+ * @returns {string} Identificador único para la línea del carrito.
+ */
+export function get_cart_item_id(sku: string, selected_size: string): string {
+  return `${sku}::${selected_size}`
+}
+
+/**
+ * Obtiene el precio unitario B2C aplicando el descuento vigente cuando existe.
+ * @param {CartProduct} product Producto que se agregará al carrito.
+ * @returns {number} Precio unitario final del producto.
+ */
+export function get_product_unit_price(product: CartProduct): number {
+  if (product.on_discount && product.b2c_discount) {
+    return product.b2c_price * (1 - product.b2c_discount.percentage / 100)
+  }
+  return product.b2c_price
+}
+
+/**
+ * Calcula el subtotal de una línea del carrito.
+ * @param {CartItem} item Producto almacenado en el carrito.
+ * @returns {number} Resultado de multiplicar el precio unitario por la cantidad.
+ */
+export function get_item_subtotal(item: CartItem): number {
+  return item.unit_price * item.quantity
+}
+
+/**
+ * Calcula el subtotal del carrito cuyos productos comparten la misma moneda.
+ * @param {CartItem[]} cart Productos almacenados en el carrito.
+ * @returns {number} Suma de los subtotales de las líneas, o cero si el carrito está vacío.
+ */
+export function get_cart_subtotal(cart: CartItem[]): number {
+  return cart.reduce((total, item) => total + get_item_subtotal(item), 0)
+}
+
+/**
+ * Calcula el costo de envío según el subtotal del carrito.
+ * @param {CartItem[]} cart Productos almacenados en el carrito.
+ * @returns {number} 3.000 colones si el subtotal es menor que 35.000; cero si lo alcanza o el carrito está vacío.
+ */
+export function get_cart_shipping_cost(cart: CartItem[]): number {
+  if (cart.length === 0) {
+    return 0
+  }
+  const subtotal = get_cart_subtotal(cart)
+  if (subtotal < 35000) {
+    return 3000
+  }
+  return 0
+}
+
+/**
+ * Calcula el impuesto del 13 % sobre el subtotal del carrito.
+ * @param {CartItem[]} cart Productos almacenados en el carrito.
+ * @returns {number} Monto del impuesto, o cero si el carrito está vacío.
+ */
+export function get_cart_tax(cart: CartItem[]): number {
+  return get_cart_subtotal(cart) * 0.13
+}
+
+/**
+ * Calcula el total del carrito sumando el subtotal, el impuesto y el costo de envío.
+ * @param {CartItem[]} cart Productos almacenados en el carrito.
+ * @returns {number} Total a pagar, o cero si el carrito está vacío.
+ */
+export function get_cart_total(cart: CartItem[]): number {
+  return get_cart_subtotal(cart) + get_cart_tax(cart) + get_cart_shipping_cost(cart)
+}
+
+/**
+ * Calcula el total de unidades del carrito sumando las cantidades de sus líneas.
+ * @param {CartItem[]} cart Productos almacenados en el carrito.
+ * @returns {number} Total de unidades, o cero si el carrito está vacío.
+ */
+export function get_cart_total_units(cart: CartItem[]): number {
+  return cart.reduce((total, item) => total + item.quantity, 0)
+}
+
+/**
+ * Verifica si una línea puede aumentar una unidad usando un límite de stock recién consultado.
+ * @param {CartItem} item Producto almacenado en el carrito.
+ * @param {number} max_quantity Cantidad disponible consultada fuera del carrito.
+ * @returns {boolean} true si la siguiente unidad no supera max_quantity.
+ */
+export function can_increment_item(item: CartItem, max_quantity: number): boolean {
+  return item.quantity + 1 <= max_quantity
+}
+
+/**
+ * Crea una línea nueva para el carrito a partir de un producto y la talla seleccionada.
+ * @param product Producto que se agregará al carrito.
+ * @param selected_size Talla seleccionada por la persona usuaria.
+ * @param quantity Cantidad inicial de unidades; por defecto, una.
+ * @returns Producto preparado para almacenarse en el carrito con la cantidad indicada.
+ */
+export function create_cart_item(product: CartProduct, selected_size: string, quantity = 1): CartItem {
+  return {
+    id: get_cart_item_id(product.sku, selected_size),
+    product_id: product.product_id,
+    sku: product.sku,
+    selected_size: selected_size,
+    title: product.title,
+    image: product.image,
+    unit_price: get_product_unit_price(product),
+    currency: product.currency,
+    quantity,
+  }
+}
+
+/**
+ * Agrega las unidades solicitadas o las suma a la misma variante y talla si ya existen.
+ * Rechaza toda la operación si la cantidad es inválida o supera el stock consultado.
+ * @param state Estado actual del carrito.
+ * @param new_item Producto y cantidad que se desean agregar.
+ * @param max_quantity Límite de stock recién consultado.
+ * @returns Estado actualizado sin superar el inventario disponible.
+ */
+export function add_cart_item(state: CartItem[], new_item: CartItem, max_quantity: number): CartItem[] {
+  if (!Number.isInteger(new_item.quantity) || new_item.quantity < 1) return state
+  const existing_item = state.find((item) => item.id === new_item.id)
+  if (!existing_item) {
+    return new_item.quantity <= max_quantity ? [...state, new_item] : state
+  }
+  const quantity = existing_item.quantity + new_item.quantity
+  if (quantity > max_quantity) return state
+  return state.map((item) =>
+    item.id === existing_item.id ? { ...item, quantity } : item,
+  )
+}
+
+/**
+ * Actualiza la cantidad de una línea del carrito usando únicamente valores enteros.
+ * La cantidad se mantiene entre uno y el inventario disponible.
+ * @param {CartItem[]} state Estado actual del carrito.
+ * @param {string} item_id Identificador de la línea que se actualizará.
+ * @param {number} quantity Cantidad entera seleccionada por la persona usuaria.
+ * @param {number} max_quantity Límite de stock recién consultado.
+ * @returns {CartItem[]} Estado actualizado del carrito.
+ */
+export function set_cart_item_quantity(state: CartItem[], item_id: string, quantity: number, max_quantity: number): CartItem[] {
+  if (!Number.isInteger(quantity)) return state
+  const item = state.find((cart_item) => cart_item.id === item_id)
+  if (!item) return state
+  const selected_quantity = quantity
+  if (max_quantity < 1) return state
+  if (selected_quantity < 1) {
+    return state.map((cart_item) =>
+      cart_item.id === item_id ? { ...cart_item, quantity: 1 } : cart_item,
+    )
+  }
+  const valid_quantity = Math.min(selected_quantity, max_quantity)
+  return state.map((cart_item) =>
+    cart_item.id === item_id ? { ...cart_item, quantity: valid_quantity } : cart_item,
+  )
+}
+
+/**
+ * Incrementa en una unidad una línea del carrito cuando existe inventario disponible.
+ * @param {CartItem[]} state Estado actual del carrito.
+ * @param {string} item_id Identificador de la línea que se incrementará.
+ * @param {number} max_quantity Límite de stock recién consultado.
+ * @returns {CartItem[]} Estado actualizado del carrito.
+ */
+export function increment_cart_item(state: CartItem[], item_id: string, max_quantity: number): CartItem[] {
+  return state.map((item) => {
+    if (item.id !== item_id || !can_increment_item(item, max_quantity)) return item
+    return { ...item, quantity: item.quantity + 1 }
+  })
+}
+
+/**
+ * Reduce en una unidad la cantidad de una línea sin permitir cantidades inferiores a uno.
+ * La eliminación del producto se realiza únicamente mediante remove_cart_item.
+ * @param {CartItem[]} state Estado actual del carrito.
+ * @param {string} item_id Identificador de la línea que se reducirá.
+ * @returns {CartItem[]} Estado actualizado con una cantidad mínima de uno.
+ */
+export function decrement_cart_item(state: CartItem[], item_id: string): CartItem[] {
+  return state.map((cart_item) =>
+    cart_item.id === item_id ? { ...cart_item, quantity: Math.max(1, cart_item.quantity - 1) } : cart_item,
+  )
+}
+
+/**
+ * Elimina por completo una línea del carrito.
+ * @param {CartItem[]} state Estado actual del carrito.
+ * @param {string} item_id Identificador de la línea que se eliminará.
+ * @returns {CartItem[]} Estado del carrito sin el producto indicado.
+ */
+export function remove_cart_item(state: CartItem[], item_id: string): CartItem[] {
+  return state.filter((item) => item.id !== item_id)
+}
+
+/**
+ * Elimina todas las líneas almacenadas en el carrito.
+ * @returns {CartItem[]} Carrito vacío.
+ */
+export function clear_cart(): CartItem[] {
+  return []
+}
+
+/**
+ * Procesa una acción y delega la actualización del carrito a la función correspondiente.
+ * @param {CartItem[]} state Estado actual del carrito.
+ * @param {CartAction} action Acción que se desea aplicar al carrito.
+ * @returns {CartItem[]} Nuevo estado del carrito después de aplicar la acción.
+ */
+export function cart_reducer(state: CartItem[], action: CartAction): CartItem[] {
+  switch (action.type) {
+    case "add":
+      return add_cart_item(state, action.item, action.max_quantity)
+    case "set_quantity":
+      return set_cart_item_quantity(state, action.item_id, action.quantity, action.max_quantity)
+    case "increment":
+      return increment_cart_item(state, action.item_id, action.max_quantity)
+    case "decrement":
+      return decrement_cart_item(state, action.item_id)
+    case "remove":
+      return remove_cart_item(state, action.item_id)
+    case "clear":
+      return clear_cart()
+  }
+}
