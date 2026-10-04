@@ -21,11 +21,9 @@ El proyecto contempla:
 - Vista de detalle de producto con rutas dinámicas (`/producto/:id`).
 - Despliegue continuo en GitHub Pages.
 
-## Lecciones aprendidas
+## Decisiones de diseño
 
-- Validar el esquema de producto desde etapas tempranas con datos de prueba evita tener que reestructurar el JSON y reindexar el catálogo una vez avanzada la implementación.
-- Separar correctamente los atributos *searchable* de las facetas desde el modelo de datos —en lugar de ajustarlo después en la configuración del índice— simplifica la implementación del buscador y evita reindexaciones innecesarias.
-- Precalcular campos derivados (stock total, disponibilidad por canal, estado de descuentos) reduce errores de consistencia frente a calcularlos en el frontend.
+- Cada producto cuenta con una ficha individual que incluye sus variantes de color y talla. Por ello, el botón **Agregar al carrito** abre un diálogo para seleccionar el color y la talla antes de agregar la variante elegida al carrito.
 
 ## Enlaces
 
