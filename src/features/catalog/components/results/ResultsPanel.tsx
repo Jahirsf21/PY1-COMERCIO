@@ -26,11 +26,14 @@ export function ResultsPanel() {
       </div>
       <div className="relative min-h-0 flex-1">
         <ScrollArea ref={resultsRef} className="h-full">
-          <div className="p-1 pr-3 pb-20 lg:pb-1">
+          <div className="p-1 pr-3 pb-28 lg:pb-1">
             <ProductGrid />
           </div>
         </ScrollArea>
-        <MobileFilterSheet />
+        <div className="absolute right-4 bottom-4 z-40 flex flex-col gap-2 lg:hidden">
+          <SortBySelect floating />
+          <MobileFilterSheet />
+        </div>
       </div>
       <PaginationControls onPageChange={scrollToResults} />
     </div>
