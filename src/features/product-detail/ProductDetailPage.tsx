@@ -7,14 +7,7 @@ import { getProductVariants } from "@/lib/getProductVariants"
 import { getAvailableQuantityBySize, getSizesFromStock } from "@/lib/getProductStock"
 import { AddToCartForm } from "@/features/product-detail/AddToCartForm"
 import { ShopHeader } from "@/components/shop-header"
-
-function formatPrice(value: number, currency: string) {
-  return new Intl.NumberFormat("es-CR", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value);
-}
+import { format_price } from "@/lib/utils"
 
 function ProductDetailSkeleton() {
   return (
@@ -189,12 +182,12 @@ export default function ProductDetailPage() {
               <div className="mt-4 flex items-center justify-between gap-4">
                 <div>
                   <p className="text-xl font-semibold">
-                    {formatPrice(currentPrice, selectedVariant.currency)}
+                    {format_price(currentPrice, selectedVariant.currency)}
                   </p>
                   {discount && (
                     <p className="text-sm text-muted-foreground">
                       <span className="line-through">
-                        {formatPrice(selectedVariant.b2c_price, selectedVariant.currency)}
+                        {format_price(selectedVariant.b2c_price, selectedVariant.currency)}
                       </span>{" "}
                       <span className="font-medium text-foreground">
                         {discount.percentage}% de descuento
