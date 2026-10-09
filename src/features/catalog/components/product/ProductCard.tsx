@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import type { ProductHit } from "@/lib/types/product"
 import { ProductImagePreview } from "@/features/catalog/components/product/ProductImagePreview"
 import { AddToCartDialog } from "@/features/catalog/components/product/AddToCartDialog"
+import { format_price } from "@/lib/utils"
+import { get_product_unit_price } from "@/lib/cart"
 
 export function ProductCard({ hit }: { hit: ProductHit }) {
   return (
@@ -37,8 +39,13 @@ export function ProductCard({ hit }: { hit: ProductHit }) {
           {hit.rating}
         </p>
         <p className="text-sm font-semibold">
-          {hit.currency} ₡{hit.b2c_price.toLocaleString("es-CR")}
+          {format_price(get_product_unit_price(hit), hit.currency)}
         </p>
+        {hit.on_discount && hit.b2c_discount && (
+          <p className="text-xs text-muted-foreground">
+            <span className="line-through">{format_price(hit.b2c_price, hit.currency)}</span> · {hit.b2c_discount.percentage}% de descuento
+          </p>
+        )}
       </CardContent>
       <CardFooter className="mt-auto flex-col gap-2">
         <AddToCartDialog hit={hit} />

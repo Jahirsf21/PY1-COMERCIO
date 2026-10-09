@@ -3,12 +3,10 @@ import { ArrowLeftIcon, ShoppingCartIcon } from "lucide-react"
 import { ShopHeader } from "@/components/shop-header"
 import { useCart } from "@/lib/context/useCart"
 import { get_item_subtotal } from "@/lib/cart"
+import { format_price } from "@/lib/utils"
 import { CartQuantityStepper } from "@/features/cart/components/CartQuantityStepper"
 import { RemoveCartItemDialog } from "@/features/cart/components/RemoveCartItemDialog"
 
-function formatPrice(value: number, currency: string) {
-  return new Intl.NumberFormat("es-CR", { style: "currency", currency }).format(value)
-}
 
 export default function CartPage() {
   const { cart, subtotal, shipping, tax, total, total_items: totalUnits } = useCart()
@@ -67,7 +65,7 @@ export default function CartPage() {
                   <dl className="grid grid-cols-2 gap-4 border-t border-input pt-4 sm:col-span-2 sm:grid-cols-3">
                     <div className="min-w-0">
                       <dt className="text-xs text-muted-foreground">Precio unitario</dt>
-                      <dd className="mt-1 break-words text-sm font-medium">{formatPrice(item.unit_price, item.currency)}</dd>
+                      <dd className="mt-1 break-words text-sm font-medium">{format_price(item.unit_price, item.currency)}</dd>
                     </div>
                     <div>
                       <dt className="text-xs text-muted-foreground">Cantidad</dt>
@@ -77,7 +75,7 @@ export default function CartPage() {
                     </div>
                     <div className="col-span-2 min-w-0 sm:col-span-1">
                       <dt className="text-xs text-muted-foreground">Subtotal</dt>
-                      <dd className="mt-1 break-words font-semibold">{formatPrice(get_item_subtotal(item), item.currency)}</dd>
+                      <dd className="mt-1 break-words font-semibold">{format_price(get_item_subtotal(item), item.currency)}</dd>
                     </div>
                   </dl>
                 </li>
@@ -92,19 +90,19 @@ export default function CartPage() {
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                   <dt className="text-muted-foreground">Subtotal</dt>
-                  <dd className="break-words font-medium">{formatPrice(subtotal, cart[0].currency)}</dd>
+                  <dd className="break-words font-medium">{format_price(subtotal, cart[0].currency)}</dd>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                   <dt className="text-muted-foreground">Impuestos (13 %)</dt>
-                  <dd className="break-words font-medium">{formatPrice(tax, cart[0].currency)}</dd>
+                  <dd className="break-words font-medium">{format_price(tax, cart[0].currency)}</dd>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                   <dt className="text-muted-foreground">Envío</dt>
-                  <dd className="break-words font-medium">{shipping === 0 ? "Gratis" : formatPrice(shipping, cart[0].currency)}</dd>
+                  <dd className="break-words font-medium">{shipping === 0 ? "Gratis" : format_price(shipping, cart[0].currency)}</dd>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-input pt-4">
                   <dt className="text-base font-semibold">Total</dt>
-                  <dd className="break-words text-lg font-semibold">{formatPrice(total, cart[0].currency)}</dd>
+                  <dd className="break-words text-lg font-semibold">{format_price(total, cart[0].currency)}</dd>
                 </div>
               </dl>
             </aside>

@@ -7,6 +7,7 @@ import { toast } from "@/components/ui/toast"
 import { get_cart_item_id, get_product_unit_price } from "@/lib/cart"
 import { useCart } from "@/lib/context/useCart"
 import type { ProductHit } from "@/lib/types/product"
+import { format_price } from "@/lib/utils"
 
 type AddToCartFormProps = {
   product: ProductHit
@@ -44,11 +45,6 @@ export function AddToCartForm({
     stockLimitReached ? `${id}-stock-limit` : undefined,
     error ? `${id}-error` : undefined,
   ].filter(Boolean).join(" ") || undefined
-  const priceFormatter = new Intl.NumberFormat("es-CR", {
-    style: "currency",
-    currency: product.currency,
-    maximumFractionDigits: 0,
-  })
 
   function handleQuantityChange(nextQuantity: string) {
     setQuantity(nextQuantity)
@@ -138,7 +134,7 @@ export function AddToCartForm({
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm text-muted-foreground">Subtotal</span>
         <span className="font-semibold">
-          {isValidQuantity ? priceFormatter.format(get_product_unit_price(product) * requestedQuantity) : "—"}
+          {isValidQuantity ? format_price(get_product_unit_price(product) * requestedQuantity, product.currency) : "—"}
         </span>
       </div>
       {error && <p id={`${id}-error`} role="alert" className="text-sm text-destructive">{error}</p>}

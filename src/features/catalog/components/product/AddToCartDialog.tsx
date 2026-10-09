@@ -11,7 +11,7 @@ import { useCart } from "@/lib/context/useCart"
 import { getProductVariants } from "@/lib/getProductVariants"
 import { getAvailableQuantityBySize, getSizesFromStock } from "@/lib/getProductStock"
 import type { ProductHit, VariantsResult } from "@/lib/types/product"
-import { cn } from "@/lib/utils"
+import { cn, format_price } from "@/lib/utils"
 
 export function AddToCartDialog({ hit }: { hit: ProductHit }) {
   const id = useId()
@@ -50,11 +50,6 @@ export function AddToCartDialog({ hit }: { hit: ProductHit }) {
     ? cart.find((item) => item.id === get_cart_item_id(selectedVariant.sku, selectedSize))?.quantity ?? 0
     : 0
   const canAdd = Boolean(selectedVariant && selectedSize && availableQuantity > cartQuantity && !isSubmitting)
-  const priceFormatter = new Intl.NumberFormat("es-CR", {
-    style: "currency",
-    currency: preview.currency,
-    maximumFractionDigits: 0,
-  })
   const detailParams = new URLSearchParams({ variante: preview.sku })
   if (selectedSize) detailParams.set("talla", selectedSize)
 
@@ -214,10 +209,10 @@ export function AddToCartDialog({ hit }: { hit: ProductHit }) {
                 </div>
 
                 <div className="space-y-1">
-                  <p className="text-2xl font-semibold">{priceFormatter.format(get_product_unit_price(preview))}</p>
+                  <p className="text-2xl font-semibold">{format_price(get_product_unit_price(preview), preview.currency)}</p>
                   {preview.on_discount && preview.b2c_discount && (
                     <p className="text-sm text-muted-foreground">
-                      <span className="line-through">{priceFormatter.format(preview.b2c_price)}</span> · {preview.b2c_discount.percentage}% de descuento
+                      <span className="line-through">{format_price(preview.b2c_price, preview.currency)}</span> · {preview.b2c_discount.percentage}% de descuento
                     </p>
                   )}
                   {!isLoading && selectedVariant && (

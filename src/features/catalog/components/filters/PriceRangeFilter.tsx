@@ -1,10 +1,7 @@
 import { useState } from "react"
 import { useRange } from "react-instantsearch"
 import { Slider } from "@/components/ui/slider"
-
-function formatPrice(value: number) {
-  return value.toLocaleString("es-CR");
-}
+import { format_price } from "@/lib/utils"
 
 export function PriceRangeFilter() {
   const { start, range, canRefine, refine } = useRange({ attribute: "b2c_price" });
@@ -39,8 +36,8 @@ export function PriceRangeFilter() {
         }}
       />
       <div className="flex justify-between text-xs text-muted-foreground">
-        <span>₡{formatPrice(value[0])}</span>
-        <span>₡{formatPrice(value[1])}</span>
+        <span>{format_price(value[0], "CRC")}</span>
+        <span>{format_price(value[1], "CRC")}</span>
       </div>
     </div>
   );
