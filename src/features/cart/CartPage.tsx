@@ -1,11 +1,10 @@
 import { Link } from "react-router-dom"
 import { ArrowLeftIcon, ShoppingCartIcon } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { ShopHeader } from "@/components/shop-header"
 import { useCart } from "@/lib/context/useCart"
-import { get_item_subtotal } from "@/lib/cart"
 import { format_price } from "@/lib/utils"
-import { CartQuantityStepper } from "@/features/cart/components/CartQuantityStepper"
-import { RemoveCartItemDialog } from "@/features/cart/components/RemoveCartItemDialog"
+import { CartItemCard } from "@/features/cart/components/CartItemCard"
 
 
 export default function CartPage() {
@@ -50,37 +49,7 @@ export default function CartPage() {
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
             <ul aria-label="Productos en tu carrito" className="min-w-0 space-y-4">
               {cart.map((item) => (
-                <li key={item.id} className="grid gap-4 rounded-xl border border-input bg-card p-4 sm:grid-cols-[96px_minmax(0,1fr)]">
-                  <img src={item.image.url} alt={item.image.alt} className="size-24 rounded-lg bg-muted object-contain" loading="lazy" />
-                  <div className="flex min-w-0 items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <Link
-                        to={`/producto/${encodeURIComponent(item.product_id)}?${new URLSearchParams({ variante: item.sku, talla: item.selected_size })}`}
-                        className="rounded-sm font-medium leading-snug break-words hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      >
-                        {item.title}
-                      </Link>
-                      <p className="mt-2 text-sm text-muted-foreground">Talla: {item.selected_size}</p>
-                    </div>
-                    <RemoveCartItemDialog item={item} />
-                  </div>
-                  <dl className="grid grid-cols-2 gap-4 border-t border-input pt-4 sm:col-span-2 sm:grid-cols-3">
-                    <div className="min-w-0">
-                      <dt className="text-xs text-muted-foreground">Precio unitario</dt>
-                      <dd className="mt-1 break-words text-sm font-medium">{format_price(item.unit_price, item.currency)}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-xs text-muted-foreground">Cantidad</dt>
-                      <dd className="mt-1">
-                        <CartQuantityStepper item={item} />
-                      </dd>
-                    </div>
-                    <div className="col-span-2 min-w-0 sm:col-span-1">
-                      <dt className="text-xs text-muted-foreground">Subtotal</dt>
-                      <dd className="mt-1 break-words font-semibold">{format_price(get_item_subtotal(item), item.currency)}</dd>
-                    </div>
-                  </dl>
-                </li>
+                <CartItemCard key={item.id} item={item} />
               ))}
             </ul>
             <aside className="min-w-0 rounded-xl border border-input bg-card p-5 lg:sticky lg:top-6">
@@ -107,6 +76,14 @@ export default function CartPage() {
                   <dd className="break-words text-lg font-semibold">{format_price(total, cart[0].currency)}</dd>
                 </div>
               </dl>
+              <Button
+                nativeButton={false}
+                render={<Link to="/checkout" />}
+                size="lg"
+                className="mt-5 h-11 w-full cursor-pointer"
+              >
+                Finalizar compra
+              </Button>
             </aside>
           </div>
         )}
