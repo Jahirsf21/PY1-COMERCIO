@@ -52,6 +52,7 @@ export function CheckoutForm() {
 
   /**
    * Actualiza un campo del comprador y descarta los errores que dejan de corresponder al valor ingresado.
+   * Elimina los números del nombre completo al escribir o pegar texto.
    * Conserva únicamente dígitos en los teléfonos y en todos los tipos de identificación.
    * Limita el número de identificación a un máximo de 12 dígitos y los teléfonos a 8.
    * @param field Campo de identificación o contacto que se desea actualizar.
@@ -59,8 +60,9 @@ export function CheckoutForm() {
    */
   function handleBuyerChange<Field extends keyof BuyerInfo>(field: Field, value: BuyerInfo[Field]) {
     if (field === "full_name" && !isManual) return
+    const input_value = field === "full_name" && typeof value === "string" ? value.replace(/\p{N}/gu, "") : value
     const is_numeric = field === "phone_number" || field === "alternative_phone_number" || field === "identification_number"
-    const filtered_value = is_numeric && typeof value === "string" ? value.replace(/\D/g, "") : value
+    const filtered_value = is_numeric && typeof input_value === "string" ? input_value.replace(/\D/g, "") : input_value
     const next_value = is_numeric && typeof filtered_value === "string" ? filtered_value.slice(0, field === "identification_number" ? 12 : 8) : filtered_value
     const changes_identity = field === "identification_type" || field === "identification_number"
     setFormData((previous) => ({
