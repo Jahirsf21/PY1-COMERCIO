@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import type { SubmitEvent } from "react"
 import { FieldGroup, FieldSeparator } from "@/components/ui/field"
 import { CheckoutBuyerFields } from "@/features/checkout/components/CheckoutBuyerFields"
 import { CheckoutDeliveryFields } from "@/features/checkout/components/CheckoutDeliveryFields"
@@ -7,6 +8,7 @@ import { get_name_from_hacienda, validate_identification } from "@/lib/identific
 import type { BuyerInfo, DeliveryInfo } from "@/lib/types/checkout"
 
 export function CheckoutForm() {
+  const formRef = useRef<HTMLFormElement>(null)
   const [formData, setFormData] = useState(get_stored_checkout_form_data)
   const [buyerErrors, setBuyerErrors] = useState<Partial<Record<keyof BuyerInfo, string>>>({})
   const [deliveryErrors, setDeliveryErrors] = useState<Partial<Record<keyof DeliveryInfo, string>>>({})
@@ -109,10 +111,44 @@ export function CheckoutForm() {
     setDeliveryErrors((previous) => ({ ...previous, [field]: validate_delivery_fields(formData.delivery)[field] }))
   }
 
+  /**
+   * Valida los datos del comprador y la entrega al intentar generar una orden.
+   * Muestra los errores y enfoca el primer campo que requiere corrección.
+   * @param event Evento de envío del formulario.
+   */
+  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const buyer_errors = validate_buyer_fields(buyer)
+    const delivery_errors = validate_delivery_fields(formData.delivery)
+
+    if (!isManual && buyer_errors.full_name) {
+      const name_error = buyer_errors.full_name
+      delete buyer_errors.full_name
+      if (!canLookupName || currentNameResult) {
+        buyer_errors.identification_number ??= lookupError ?? name_error
+      }
+    }
+
+    setBuyerErrors(buyer_errors)
+    setDeliveryErrors(delivery_errors)
+    const has_errors = Object.keys(buyer_errors).length > 0 || Object.keys(delivery_errors).length > 0
+    if (!has_errors) return
+
+    window.requestAnimationFrame(() => {
+      const invalid_field = formRef.current?.querySelector<HTMLElement>(
+        '[aria-invalid="true"]:not(:disabled):not([aria-disabled="true"]):not([readonly]):not([type="hidden"])',
+      )
+      invalid_field?.focus({ preventScroll: true })
+      invalid_field?.scrollIntoView({ block: "center" })
+    })
+  }
+
   return (
     <form
+      id="checkout-form"
+      ref={formRef}
       noValidate
-      onSubmit={(event) => event.preventDefault()}
+      onSubmit={handleSubmit}
       aria-labelledby="checkout-form-title"
       className="min-w-0 rounded-xl border border-input bg-card p-5 sm:p-6"
     >

@@ -37,7 +37,7 @@ export function CheckoutOrderSummary() {
           <dd className="break-words text-lg font-semibold">{format_price(total, currency)}</dd>
         </div>
       </dl>
-      <Button type="button" size="lg" className="mt-5 h-11 w-full cursor-pointer">
+      <Button type="submit" form="checkout-form" size="lg" className="mt-5 h-11 w-full cursor-pointer">
         Generar orden de compra
       </Button>
     </aside>
