@@ -9,9 +9,6 @@ type CheckoutInputFieldProps = ComponentProps<"input"> & {
   error?: string
 }
 
-/**
- * Muestra un campo de entrada del formulario con su etiqueta y el mensaje de validación asociado.
- */
 export function CheckoutInputField({ id, label, error, className, required, ...props }: CheckoutInputFieldProps) {
   return (
     <Field data-invalid={Boolean(error)}>

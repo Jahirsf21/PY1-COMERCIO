@@ -14,10 +14,6 @@ type CheckoutSelectFieldProps = {
   onValueChange: (value: string) => void
 }
 
-/**
- * Muestra un selector obligatorio de altura uniforme con su etiqueta y mensaje de validación.
- * Limita la altura de la lista y permite desplazar las opciones cuando exceden el espacio disponible.
- */
 export function CheckoutSelectField({ id, name, label, value, options, placeholder, error, disabled, onValueChange }: CheckoutSelectFieldProps) {
   return (
     <Field data-invalid={Boolean(error)} data-disabled={disabled}>

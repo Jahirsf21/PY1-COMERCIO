@@ -13,10 +13,6 @@ type CheckoutDeliveryFieldsProps = {
 
 const textarea_class = "min-h-24 w-full resize-y rounded-lg border border-input bg-transparent px-2.5 py-2 text-base outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30"
 
-/**
- * Muestra la dirección de entrega con selectores dependientes de provincia, cantón y distrito.
- * Mantiene Costa Rica como país de entrega y permite agregar indicaciones opcionales.
- */
 export function CheckoutDeliveryFields({ delivery, errors, onChange, onBlur }: CheckoutDeliveryFieldsProps) {
   return (
     <FieldSet>

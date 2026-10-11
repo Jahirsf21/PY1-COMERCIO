@@ -11,10 +11,6 @@ type CheckoutBuyerFieldsProps = {
   onBlur: (field: keyof BuyerInfo) => void
 }
 
-/**
- * Muestra los campos de identificación y contacto de la persona compradora.
- * Permite editar el nombre únicamente cuando el tipo de identificación seleccionado es Otro.
- */
 export function CheckoutBuyerFields({ buyer, errors, lookupError, onChange, onBlur }: CheckoutBuyerFieldsProps) {
   const is_manual = buyer.identification_type === "Otro"
   return (

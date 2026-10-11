@@ -51,7 +51,7 @@ export default function CartPage() {
               ))}
             </ul>
             <aside className="min-w-0 rounded-xl border border-input bg-card p-5 lg:sticky lg:top-28">
-              <h2 className="text-lg font-semibold">Resumen de compra</h2>
+              <h2 className="text-lg font-semibold">Resumen del carrito</h2>
               <dl className="mt-4 space-y-3 text-sm">
                 <div className="flex items-center justify-between gap-3">
                   <dt className="text-muted-foreground">Unidades</dt>

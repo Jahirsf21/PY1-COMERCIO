@@ -16,7 +16,7 @@ export default function Checkout() {
           <ArrowLeftIcon aria-hidden="true" className="size-4" />
           Volver al carrito
         </Link>
-        <h1 className="text-2xl font-semibold">Datos y resumen del pedido</h1>
+        <h1 className="text-2xl font-semibold">Datos y resumen de la orden de compra</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Completa tus datos y revisa los productos de tu pedido.
         </p>

@@ -6,11 +6,6 @@ import { get_stored_checkout_form_data, save_checkout_form_data, validate_buyer_
 import { get_name_from_hacienda, validate_identification } from "@/lib/identification"
 import type { BuyerInfo, DeliveryInfo } from "@/lib/types/checkout"
 
-/**
- * Agrupa los datos del comprador y la entrega, mostrando los errores junto a cada campo.
- * Completa el nombre para Nacional y Extranjero; permite su ingreso manual para Otro.
- * Recupera los datos guardados y conserva los cambios en localStorage sin un estado adicional.
- */
 export function CheckoutForm() {
   const [formData, setFormData] = useState(get_stored_checkout_form_data)
   const [buyerErrors, setBuyerErrors] = useState<Partial<Record<keyof BuyerInfo, string>>>({})

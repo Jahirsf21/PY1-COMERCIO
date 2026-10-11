@@ -4,7 +4,7 @@ import CartPage from "@/features/cart/CartPage"
 import Checkout from "@/features/checkout/Checkout"
 import ProductDetailPage from "@/features/product-detail/ProductDetailPage"
 import { useCart } from "@/lib/context/useCart"
-
+import "@/utils/supabase"
 import "@/App.css"
 
 function App() {
