@@ -1,5 +1,5 @@
 /**
- * Tipos de identificación disponibles para la persona compradora: nacional o extranjero
+ * Tipos de identificación disponibles para la persona compradora: nacional, extranjero u otro
  */
 export type IdentificationType = "Nacional" | "Extranjero" | "Otro";
 

@@ -1,0 +1,165 @@
+import { delivery_locations, delivery_postal_code_ranges } from "@/lib/data/delivery_locations"
+import {
+  validate_email,
+  validate_full_name,
+  validate_identification_number,
+  validate_identification_type,
+  validate_phone_number,
+} from "@/lib/identification"
+import type { BuyerInfo, CheckoutFormData, DeliveryInfo } from "@/lib/types/checkout"
+
+/**
+ * Construye los valores iniciales del formulario de compra.
+ * Selecciona Nacional como tipo de identificación y Costa Rica como país de entrega.
+ * @returns {CheckoutFormData} Datos iniciales del formulario.
+ *   buyer: información de identificación y contacto, con Nacional seleccionado y los demás campos vacíos.
+ *   delivery: dirección de entrega, con Costa Rica seleccionado y los demás campos vacíos.
+ */
+export function create_checkout_form_data(): CheckoutFormData {
+  return {
+    buyer: {
+      full_name: "",
+      identification_type: "Nacional",
+      identification_number: "",
+      email: "",
+      alternative_email: "",
+      phone_number: "",
+      alternative_phone_number: "",
+    },
+    delivery: {
+      country: "Costa Rica",
+      province: "",
+      canton: "",
+      district: "",
+      address: "",
+      postal_code: "",
+      additional_information: "",
+    },
+  }
+}
+
+/**
+ * Obtiene las provincias disponibles en el catálogo de entrega.
+ * Ordena los nombres alfabéticamente según las reglas del español.
+ * @returns {string[]} Lista de provincias ordenadas alfabéticamente.
+ */
+export function get_delivery_provinces(): string[] {
+  return Object.keys(delivery_locations).sort((first, second) => first.localeCompare(second, "es"))
+}
+
+/**
+ * Obtiene los cantones de una provincia del catálogo de entrega.
+ * Comprueba que la provincia exista y ordena los nombres según las reglas del español.
+ * @param {string} province Provincia seleccionada por la persona compradora.
+ * @returns {string[]} Lista de cantones ordenados alfabéticamente; un arreglo vacío si la provincia no existe.
+ */
+export function get_delivery_cantons(province: string): string[] {
+  const cantons = Object.hasOwn(delivery_locations, province) ? delivery_locations[province] : {}
+  return Object.keys(cantons).sort((first, second) => first.localeCompare(second, "es"))
+}
+
+/**
+ * Obtiene los distritos de un cantón dentro de la provincia seleccionada.
+ * Comprueba que el cantón pertenezca a la provincia y ordena una copia de los nombres según las reglas del español.
+ * @param {string} province Provincia seleccionada por la persona compradora.
+ * @param {string} canton Cantón seleccionado dentro de la provincia.
+ * @returns {string[]} Lista de distritos ordenados alfabéticamente; un arreglo vacío si la provincia o el cantón no existen.
+ */
+export function get_delivery_districts(province: string, canton: string): string[] {
+  if (!get_delivery_cantons(province).includes(canton)) return []
+  return [...delivery_locations[province][canton]].sort((first, second) => first.localeCompare(second, "es"))
+}
+
+/**
+ * Valida cada campo de identificación y contacto de la persona compradora.
+ * El nombre, el tipo y número de identificación, el correo y el teléfono principales son obligatorios.
+ * Los contactos alternativos son opcionales y solo se rechazan cuando contienen un valor inválido.
+ * @param {BuyerInfo} buyer Información de la persona compradora que se desea validar.
+ * @returns {Partial<Record<keyof BuyerInfo, string>>} Errores de validación por campo.
+ *   Cada propiedad corresponde a un campo inválido de buyer y contiene su mensaje de error.
+ *   Los campos válidos no se incluyen; retorna un objeto vacío si todos son válidos.
+ */
+export function validate_buyer_fields(buyer: BuyerInfo): Partial<Record<keyof BuyerInfo, string>> {
+  const validations = {
+    full_name: validate_full_name(buyer.full_name),
+    identification_type: validate_identification_type(buyer.identification_type),
+    identification_number: validate_identification_number(buyer.identification_number, buyer.identification_type),
+    email: validate_email(buyer.email),
+    alternative_email: validate_email(buyer.alternative_email, false, "correo electrónico alternativo"),
+    phone_number: validate_phone_number(buyer.phone_number),
+    alternative_phone_number: validate_phone_number(buyer.alternative_phone_number, false, "número de teléfono alternativo"),
+  }
+  const errors: Partial<Record<keyof BuyerInfo, string>> = {}
+  for (const [field, result] of Object.entries(validations)) {
+    if (!result.valid) errors[field as keyof BuyerInfo] = result.error
+  }
+  return errors
+}
+
+/**
+ * Valida el formato de un código postal y el rango de la provincia seleccionada.
+ * Exige 5 dígitos, una provincia del 1 al 7 y códigos de cantón y distrito distintos de 00.
+ * Comprueba el rango únicamente cuando la provincia existe en el catálogo de rangos.
+ * No verifica la correspondencia con un cantón o distrito concreto porque el catálogo de ubicaciones no incluye sus códigos.
+ * @param {string} postal_code Código postal ingresado por la persona compradora.
+ * @param {string} province Provincia seleccionada para la entrega.
+ * @returns {{valid: boolean, error?: string}} Resultado de la validación.
+ *   valid: true si el código cumple el formato y el rango de la provincia cuando está disponible.
+ *   error: primer requisito incumplido, cuando valid es false.
+ */
+export function validate_delivery_postal_code(postal_code: string, province: string): { valid: boolean; error?: string } {
+  const normalized_code = postal_code.trim()
+  if (!normalized_code) {
+    return { valid: false, error: "El código postal es obligatorio." }
+  }
+  if (!/^\d{5}$/.test(normalized_code)) {
+    return { valid: false, error: "El código postal debe contener exactamente 5 dígitos." }
+  }
+  if (!/^[1-7]/.test(normalized_code)) {
+    return { valid: false, error: "El primer dígito del código postal debe identificar una provincia del 1 al 7." }
+  }
+  if (normalized_code.slice(1, 3) === "00" || normalized_code.slice(3, 5) === "00") {
+    return { valid: false, error: "Los códigos de cantón y distrito del código postal no pueden ser 00." }
+  }
+  if (Object.hasOwn(delivery_postal_code_ranges, province)) {
+    const range = delivery_postal_code_ranges[province]
+    const numeric_code = Number(normalized_code)
+    if (numeric_code < range.minimum || numeric_code > range.maximum) {
+      return { valid: false, error: `El código postal para ${province} debe estar entre ${range.minimum} y ${range.maximum}.` }
+    }
+  }
+  return { valid: true }
+}
+
+/**
+ * Valida la dirección de entrega y la relación entre provincia, cantón y distrito.
+ * Admite únicamente Costa Rica y ubicaciones presentes en el catálogo de entrega.
+ * Requiere una dirección y un código postal de 5 dígitos dentro del rango de la provincia; las indicaciones adicionales son opcionales.
+ * @param {DeliveryInfo} delivery Dirección de entrega que se desea validar.
+ * @returns {Partial<Record<keyof DeliveryInfo, string>>} Errores de validación por campo.
+ *   Cada propiedad corresponde a un campo inválido de delivery y contiene su mensaje de error.
+ *   Los campos válidos no se incluyen; retorna un objeto vacío si todos son válidos.
+ */
+export function validate_delivery_fields(delivery: DeliveryInfo): Partial<Record<keyof DeliveryInfo, string>> {
+  const errors: Partial<Record<keyof DeliveryInfo, string>> = {}
+  if (delivery.country !== "Costa Rica") errors.country = "Las entregas se realizan únicamente en Costa Rica."
+  if (!delivery.province) {
+    errors.province = "La provincia de entrega es obligatoria."
+  } else if (!get_delivery_provinces().includes(delivery.province)) {
+    errors.province = "Selecciona una provincia del catálogo de entrega."
+  }
+  if (!delivery.canton) {
+    errors.canton = "El cantón de entrega es obligatorio."
+  } else if (!get_delivery_cantons(delivery.province).includes(delivery.canton)) {
+    errors.canton = "El cantón debe pertenecer a la provincia seleccionada."
+  }
+  if (!delivery.district) {
+    errors.district = "El distrito de entrega es obligatorio."
+  } else if (!get_delivery_districts(delivery.province, delivery.canton).includes(delivery.district)) {
+    errors.district = "El distrito debe pertenecer al cantón seleccionado."
+  }
+  if (!delivery.address.trim()) errors.address = "La dirección exacta de entrega es obligatoria."
+  const postal_code_result = validate_delivery_postal_code(delivery.postal_code, delivery.province)
+  if (!postal_code_result.valid) errors.postal_code = postal_code_result.error
+  return errors
+}

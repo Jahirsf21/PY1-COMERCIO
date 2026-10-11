@@ -56,18 +56,18 @@ export function validate_identification(identification: string, identification_t
 
 /**
  * Valida el tipo de identificación seleccionado por la persona compradora.
- * Rechaza los valores vacíos y los tipos distintos de Nacional o Extranjero.
+ * Admite Nacional, Extranjero y Otro; rechaza los valores vacíos y los tipos no disponibles.
  * @param {string} identification_type Tipo de identificación que se desea validar.
  * @returns {{valid: boolean, error?: string}} Resultado de la validación.
- *   valid: true si el tipo seleccionado es Nacional o Extranjero.
+ *   valid: true si el tipo seleccionado es Nacional, Extranjero u Otro.
  *   error: motivo del rechazo cuando valid es false.
  */
 export function validate_identification_type(identification_type: string): { valid: boolean; error?: string } {
   if (!identification_type.trim()) {
     return { valid: false, error: "El tipo de identificación es obligatorio." };
   }
-  if (identification_type !== "Nacional" && identification_type !== "Extranjero") {
-    return { valid: false, error: "El tipo de identificación debe ser Nacional o Extranjero." };
+  if (identification_type !== "Nacional" && identification_type !== "Extranjero" && identification_type !== "Otro") {
+    return { valid: false, error: "El tipo de identificación debe ser Nacional, Extranjero u Otro." };
   }
   return { valid: true };
 }
@@ -75,7 +75,8 @@ export function validate_identification_type(identification_type: string): { val
 /**
  * Valida el número de identificación de la persona compradora según el tipo seleccionado.
  * Requiere un valor numérico de 9 dígitos para Nacional, o de 11 o 12 para Extranjero.
- * @param {string} identification Número de identificación sin espacios internos ni separadores.
+ * Para Otro exige un valor numérico de entre 1 y 12 dígitos.
+ * @param {string} identification Número de identificación sin letras, espacios internos ni separadores.
  * @param {IdentificationType} identification_type Tipo de identificación de la persona compradora.
  * @returns {{valid: boolean, error?: string}} Resultado de la validación.
  *   valid: true si la identificación está presente y cumple el formato de su tipo.
@@ -89,6 +90,9 @@ export function validate_identification_number(identification: string, identific
   if (!type_result.valid) return type_result;
   if (!validate_number(identification)) {
     return { valid: false, error: "El número de identificación debe contener solo dígitos, sin guiones ni espacios entre ellos." };
+  }
+  if (identification_type === "Otro") {
+    return identification.trim().length <= 12 ? { valid: true } : { valid: false, error: "El número de identificación debe contener como máximo 12 dígitos." };
   }
   if (!validate_identification_length(identification, identification_type)) {
     return {
