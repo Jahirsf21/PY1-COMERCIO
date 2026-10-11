@@ -15,13 +15,15 @@ export default function CartPage() {
     <div className="min-h-dvh bg-background">
       <ShopHeader />
       <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-6">
-        <Link
-          to="/"
-          className="mb-5 inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <ArrowLeftIcon aria-hidden="true" className="size-4" />
-          Volver al catálogo
-        </Link>
+        {cart.length > 0 && (
+          <Link
+            to="/"
+            className="mb-5 inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <ArrowLeftIcon aria-hidden="true" className="size-4" />
+            Volver al catálogo
+          </Link>
+        )}
         <div className="mb-6">
           <h1 className="text-2xl font-semibold">Tu carrito</h1>
           {cart.length > 0 && (
