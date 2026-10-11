@@ -135,6 +135,18 @@ export function save_checkout_form_data(form_data: CheckoutFormData): void {
 }
 
 /**
+ * Elimina los datos guardados del checkout-
+ * @returns {void} No retorna ningún valor.
+ */
+export function clear_stored_checkout_form_data(): void {
+  try {
+    window.localStorage.removeItem("space-shop-checkout")
+  } catch {
+    return
+  }
+}
+
+/**
  * Obtiene las provincias disponibles en el catálogo de entrega.
  * Ordena los nombres alfabéticamente según las reglas del español.
  * @returns {string[]} Lista de provincias ordenadas alfabéticamente.
