@@ -1,7 +1,7 @@
 /**
  * Tipos de identificación disponibles para la persona compradora: nacional o extranjero
  */
-export type IdentificationType = "Nacional" | "Extranjero";
+export type IdentificationType = "Nacional" | "Extranjero" | "Otro";
 
 /**
  * Información de identificación y contacto de la persona compradora
@@ -23,8 +23,10 @@ export type DeliveryInfo = {
     country: string
     province: string
     canton: string
+    district: string
     address: string
     postal_code: string
+    additional_information: string
 }
 
 /**
