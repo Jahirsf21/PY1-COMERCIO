@@ -12,7 +12,7 @@ export default function CartPage() {
 
   return (
     <div className="min-h-dvh bg-background">
-      <ShopHeader />
+      <ShopHeader sticky />
       <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-6">
         {cart.length > 0 && (
           <Link
@@ -25,11 +25,9 @@ export default function CartPage() {
         )}
         <div className="mb-6">
           <h1 className="text-2xl font-semibold">Tu carrito</h1>
-          {cart.length > 0 && (
-            <p className="mt-1 text-sm text-muted-foreground">
-              {totalUnits} {totalUnits === 1 ? "unidad" : "unidades"} en tu carrito
-            </p>
-          )}
+          <p className="mt-1 text-sm text-muted-foreground">
+            Revisa los productos antes de continuar
+          </p>
         </div>
 
         {cart.length === 0 ? (
@@ -52,7 +50,7 @@ export default function CartPage() {
                 <CartItemCard key={item.id} item={item} />
               ))}
             </ul>
-            <aside className="min-w-0 rounded-xl border border-input bg-card p-5 lg:sticky lg:top-6">
+            <aside className="min-w-0 rounded-xl border border-input bg-card p-5 lg:sticky lg:top-28">
               <h2 className="text-lg font-semibold">Resumen de compra</h2>
               <dl className="mt-4 space-y-3 text-sm">
                 <div className="flex items-center justify-between gap-3">
@@ -82,7 +80,7 @@ export default function CartPage() {
                 size="lg"
                 className="mt-5 h-11 w-full cursor-pointer"
               >
-                Finalizar compra
+                Continuar con la compra
               </Button>
             </aside>
           </div>

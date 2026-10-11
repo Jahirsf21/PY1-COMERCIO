@@ -1,42 +1,10 @@
-import { useEffect, useRef, useState } from "react"
-import type { SubmitEvent } from "react"
-import { Button } from "@/components/ui/button"
+import { useEffect, useState } from "react"
 import { FieldGroup, FieldSeparator } from "@/components/ui/field"
 import { CheckoutBuyerFields } from "@/features/checkout/components/CheckoutBuyerFields"
 import { CheckoutDeliveryFields } from "@/features/checkout/components/CheckoutDeliveryFields"
-import { create_checkout_form_data, validate_buyer_fields, validate_delivery_fields } from "@/lib/checkout"
-import { get_name_from_hacienda, validate_identification, validate_identification_type } from "@/lib/identification"
-import type { BuyerInfo, CheckoutFormData, DeliveryInfo } from "@/lib/types/checkout"
-
-/**
- * Recupera los datos del formulario almacenados en el navegador.
- * Conserva los campos de texto conocidos, completa los ausentes y aplica los límites de los campos numéricos.
- * @returns {CheckoutFormData} Datos guardados o valores iniciales si el almacenamiento no está disponible o contiene un JSON inválido.
- */
-function get_stored_checkout_form_data(): CheckoutFormData {
-  const form_data = create_checkout_form_data()
-  try {
-    const stored_data: { buyer?: Record<string, unknown>; delivery?: Record<string, unknown> } | null = JSON.parse(window.localStorage.getItem("space-shop-checkout") ?? "null")
-    for (const section of ["buyer", "delivery"] as const) {
-      for (const field of Object.keys(form_data[section])) {
-        if (typeof stored_data?.[section]?.[field] === "string") {
-          Object.assign(form_data[section], { [field]: stored_data[section][field] })
-        }
-      }
-    }
-    if (!validate_identification_type(form_data.buyer.identification_type).valid) {
-      form_data.buyer.identification_type = "Nacional"
-    }
-    form_data.buyer.identification_number = form_data.buyer.identification_number.replace(/\D/g, "").slice(0, 12)
-    form_data.buyer.phone_number = form_data.buyer.phone_number.replace(/\D/g, "").slice(0, 8)
-    form_data.buyer.alternative_phone_number = (form_data.buyer.alternative_phone_number ?? "").replace(/\D/g, "").slice(0, 8)
-    form_data.delivery.country = "Costa Rica"
-    form_data.delivery.postal_code = form_data.delivery.postal_code.replace(/\D/g, "").slice(0, 5)
-  } catch {
-    return form_data
-  }
-  return form_data
-}
+import { get_stored_checkout_form_data, save_checkout_form_data, validate_buyer_fields, validate_delivery_fields } from "@/lib/checkout"
+import { get_name_from_hacienda, validate_identification } from "@/lib/identification"
+import type { BuyerInfo, DeliveryInfo } from "@/lib/types/checkout"
 
 /**
  * Agrupa los datos del comprador y la entrega, mostrando los errores junto a cada campo.
@@ -44,7 +12,6 @@ function get_stored_checkout_form_data(): CheckoutFormData {
  * Recupera los datos guardados y conserva los cambios en localStorage sin un estado adicional.
  */
 export function CheckoutForm() {
-  const formRef = useRef<HTMLFormElement>(null)
   const [formData, setFormData] = useState(get_stored_checkout_form_data)
   const [buyerErrors, setBuyerErrors] = useState<Partial<Record<keyof BuyerInfo, string>>>({})
   const [deliveryErrors, setDeliveryErrors] = useState<Partial<Record<keyof DeliveryInfo, string>>>({})
@@ -56,18 +23,13 @@ export function CheckoutForm() {
   const canLookupName = !isManual && validate_identification(identificationNumber, identificationType)
   const currentNameResult = canLookupName && nameResult?.key === lookupKey ? nameResult : null
   const lookupError = currentNameResult?.error
-  const isLookupPending = canLookupName && !currentNameResult
   const buyer: BuyerInfo = {
     ...formData.buyer,
     full_name: isManual ? formData.buyer.full_name : currentNameResult?.full_name ?? "",
   }
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem("space-shop-checkout", JSON.stringify(formData))
-    } catch {
-      return
-    }
+    save_checkout_form_data(formData)
   }, [formData])
 
   useEffect(() => {
@@ -150,35 +112,10 @@ export function CheckoutForm() {
     setDeliveryErrors((previous) => ({ ...previous, [field]: validate_delivery_fields(formData.delivery)[field] }))
   }
 
-  /**
-   * Valida los datos del formulario sin crear pedidos ni realizar operaciones de pago.
-   * Muestra los errores por campo y enfoca el primero que requiere corrección.
-   * @param event Evento de envío del formulario de compra.
-   */
-  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (isLookupPending) return
-    const buyer_errors = validate_buyer_fields(buyer)
-    const delivery_errors = validate_delivery_fields(formData.delivery)
-    if (!isManual && !buyer.full_name) {
-      delete buyer_errors.full_name
-      buyer_errors.identification_number ??= lookupError ?? "Completa una identificación válida para obtener el nombre."
-    }
-    setBuyerErrors(buyer_errors)
-    setDeliveryErrors(delivery_errors)
-    const has_errors = Object.keys(buyer_errors).length > 0 || Object.keys(delivery_errors).length > 0
-    if (has_errors) {
-      window.requestAnimationFrame(() => {
-        formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]:not(:disabled)')?.focus()
-      })
-    }
-  }
-
   return (
     <form
-      ref={formRef}
       noValidate
-      onSubmit={handleSubmit}
+      onSubmit={(event) => event.preventDefault()}
       aria-labelledby="checkout-form-title"
       className="min-w-0 rounded-xl border border-input bg-card p-5 sm:p-6"
     >
@@ -199,11 +136,6 @@ export function CheckoutForm() {
           onBlur={handleDeliveryBlur}
         />
       </FieldGroup>
-      <div className="mt-7 border-t border-input pt-5">
-        <Button type="submit" size="lg" className="h-11 w-full cursor-pointer sm:w-auto" disabled={isLookupPending}>
-          Continuar
-        </Button>
-      </div>
     </form>
   )
 }

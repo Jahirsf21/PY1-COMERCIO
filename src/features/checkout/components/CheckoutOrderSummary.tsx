@@ -1,16 +1,18 @@
+import { Button } from "@/components/ui/button"
 import { CartItemCard } from "@/features/cart/components/CartItemCard"
 import { useCart } from "@/lib/context/useCart"
 import { format_price } from "@/lib/utils"
 
 /**
  * Muestra los productos con las mismas acciones del carrito y los totales actualizados del pedido.
+ * Incluye el botón Proceder al pago sin acción por el momento.
  */
 export function CheckoutOrderSummary() {
   const { cart, subtotal, shipping, tax, total, total_items: totalUnits } = useCart()
   const currency = cart[0]?.currency ?? "CRC"
 
   return (
-    <aside aria-labelledby="checkout-order-summary-title" className="min-w-0 rounded-xl border border-input bg-card p-5 lg:sticky lg:top-6">
+    <aside aria-labelledby="checkout-order-summary-title" className="min-w-0 rounded-xl border border-input bg-card p-5 lg:sticky lg:top-28">
       <h2 id="checkout-order-summary-title" className="text-lg font-semibold">2. Resumen del pedido</h2>
       <ul aria-label="Productos del pedido" className="mt-5 space-y-4">
         {cart.map((item) => (
@@ -39,6 +41,9 @@ export function CheckoutOrderSummary() {
           <dd className="break-words text-lg font-semibold">{format_price(total, currency)}</dd>
         </div>
       </dl>
+      <Button type="button" size="lg" className="mt-5 h-11 w-full cursor-pointer">
+        Proceder al pago
+      </Button>
     </aside>
   )
 }

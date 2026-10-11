@@ -7,7 +7,7 @@ import { CheckoutOrderSummary } from "@/features/checkout/components/CheckoutOrd
 export default function Checkout() {
   return (
     <div className="min-h-dvh bg-background">
-      <ShopHeader />
+      <ShopHeader sticky />
       <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-6">
         <Link
           to="/carrito"
@@ -16,7 +16,7 @@ export default function Checkout() {
           <ArrowLeftIcon aria-hidden="true" className="size-4" />
           Volver al carrito
         </Link>
-        <h1 className="text-2xl font-semibold">Finalizar compra</h1>
+        <h1 className="text-2xl font-semibold">Datos y resumen del pedido</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Completa tus datos y revisa los productos de tu pedido.
         </p>

@@ -39,6 +39,102 @@ export function create_checkout_form_data(): CheckoutFormData {
 }
 
 /**
+ * Recupera explícitamente los campos del comprador y la entrega desde los datos guardados.
+ * Conserva los valores iniciales cuando un campo está ausente o tiene un tipo incorrecto.
+ * Aplica los límites de identificación, teléfonos y código postal.
+ * @param {unknown} data Datos recuperados del navegador cuyo tipo y estructura todavía no se han comprobado.
+ * @returns {CheckoutFormData} Información normalizada del comprador y la entrega.
+ */
+function normalize_checkout_form_data(data: unknown): CheckoutFormData {
+  const form_data = create_checkout_form_data()
+  if (!data || typeof data !== "object" || Array.isArray(data)) return form_data
+
+  if ("buyer" in data && data.buyer && typeof data.buyer === "object" && !Array.isArray(data.buyer)) {
+    const buyer = data.buyer
+    if ("full_name" in buyer && typeof buyer.full_name === "string") {
+      form_data.buyer.full_name = buyer.full_name
+    }
+    if ("identification_type" in buyer && (
+      buyer.identification_type === "Nacional" ||
+      buyer.identification_type === "Extranjero" ||
+      buyer.identification_type === "Otro"
+    )) {
+      form_data.buyer.identification_type = buyer.identification_type
+    }
+    if ("identification_number" in buyer && typeof buyer.identification_number === "string") {
+      form_data.buyer.identification_number = buyer.identification_number
+    }
+    if ("email" in buyer && typeof buyer.email === "string") {
+      form_data.buyer.email = buyer.email
+    }
+    if ("alternative_email" in buyer && typeof buyer.alternative_email === "string") {
+      form_data.buyer.alternative_email = buyer.alternative_email
+    }
+    if ("phone_number" in buyer && typeof buyer.phone_number === "string") {
+      form_data.buyer.phone_number = buyer.phone_number
+    }
+    if ("alternative_phone_number" in buyer && typeof buyer.alternative_phone_number === "string") {
+      form_data.buyer.alternative_phone_number = buyer.alternative_phone_number
+    }
+  }
+
+  if ("delivery" in data && data.delivery && typeof data.delivery === "object" && !Array.isArray(data.delivery)) {
+    const delivery = data.delivery
+    if ("province" in delivery && typeof delivery.province === "string") {
+      form_data.delivery.province = delivery.province
+    }
+    if ("canton" in delivery && typeof delivery.canton === "string") {
+      form_data.delivery.canton = delivery.canton
+    }
+    if ("district" in delivery && typeof delivery.district === "string") {
+      form_data.delivery.district = delivery.district
+    }
+    if ("address" in delivery && typeof delivery.address === "string") {
+      form_data.delivery.address = delivery.address
+    }
+    if ("postal_code" in delivery && typeof delivery.postal_code === "string") {
+      form_data.delivery.postal_code = delivery.postal_code
+    }
+    if ("additional_information" in delivery && typeof delivery.additional_information === "string") {
+      form_data.delivery.additional_information = delivery.additional_information
+    }
+  }
+
+  form_data.buyer.identification_number = form_data.buyer.identification_number.replace(/\D/g, "").slice(0, 12)
+  form_data.buyer.phone_number = form_data.buyer.phone_number.replace(/\D/g, "").slice(0, 8)
+  form_data.buyer.alternative_phone_number = (form_data.buyer.alternative_phone_number ?? "").replace(/\D/g, "").slice(0, 8)
+  form_data.delivery.country = "Costa Rica"
+  form_data.delivery.postal_code = form_data.delivery.postal_code.replace(/\D/g, "").slice(0, 5)
+  return form_data
+}
+
+/**
+ * Recupera los datos del formulario almacenados en el navegador.
+ * @returns {CheckoutFormData} Datos normalizados o valores iniciales si el almacenamiento no está disponible o contiene un JSON inválido.
+ */
+export function get_stored_checkout_form_data(): CheckoutFormData {
+  try {
+    return normalize_checkout_form_data(JSON.parse(window.localStorage.getItem("space-shop-checkout") ?? "null"))
+  } catch {
+    return create_checkout_form_data()
+  }
+}
+
+/**
+ * Guarda los datos del formulario sin almacenar los errores ni el estado de las consultas.
+ * Permite continuar cuando el navegador bloquea el almacenamiento o no tiene espacio disponible.
+ * @param {CheckoutFormData} form_data Información del comprador y la entrega que se desea conservar.
+ * @returns {void} No retorna ningún valor.
+ */
+export function save_checkout_form_data(form_data: CheckoutFormData): void {
+  try {
+    window.localStorage.setItem("space-shop-checkout", JSON.stringify(form_data))
+  } catch {
+    return
+  }
+}
+
+/**
  * Obtiene las provincias disponibles en el catálogo de entrega.
  * Ordena los nombres alfabéticamente según las reglas del español.
  * @returns {string[]} Lista de provincias ordenadas alfabéticamente.
