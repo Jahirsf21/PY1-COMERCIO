@@ -118,7 +118,7 @@ export default function ProductDetailPage() {
 
   return (
     <div className="min-h-dvh bg-background">
-      <ShopHeader />
+      <ShopHeader sticky />
       <main className="mx-auto w-full max-w-[1440px] px-4 py-5 lg:px-8 lg:py-8">
         <Link
           to="/"
