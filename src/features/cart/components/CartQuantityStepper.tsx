@@ -1,10 +1,9 @@
-import { useEffect, useId, useState } from "react"
+import { useId, useState } from "react"
 import { LoaderCircleIcon, MinusIcon, PlusIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { can_decrement_item, can_increment_item, get_cart_add_quantity_message, is_valid_cart_quantity } from "@/lib/cart/cart"
+import { can_decrement_item, can_increment_item, get_cart_add_quantity_message } from "@/lib/cart/cart"
 import { useCart } from "@/lib/cart/cartContext"
-import { getCartQuantityLimits } from "@/lib/catalog/catalog"
-import type { CartItem, CartQuantityLimits } from "@/lib/cart/types"
+import type { CartItem } from "@/lib/cart/types"
 
 type CartQuantityStepperProps = {
   item: CartItem
@@ -20,33 +19,13 @@ type CartQuantityStepperProps = {
  */
 export function CartQuantityStepper({ item }: CartQuantityStepperProps) {
   const id = useId()
-  const { increment_item, decrement_item } = useCart()
+  const { increment_item, decrement_item, item_validation } = useCart()
   const [updating, setUpdating] = useState<"increment" | "decrement" | null>(null)
-  const [message, setMessage] = useState<string | null>(null)
-  const [refresh, setRefresh] = useState(0)
-  const [result, setResult] = useState<{ key: string; limits: CartQuantityLimits | null; error?: string } | null>(null)
-  const lookupKey = `${item.id}::${item.quantity}::${refresh}`
-  const isLoading = result?.key !== lookupKey
-  const limits = !isLoading ? result.limits : null
-  const lookupError = !isLoading ? result.error : undefined
-
-  useEffect(() => {
-    let active = true
-    getCartQuantityLimits(item.product_id, item.sku, item.selected_size)
-      .then((currentLimits) => {
-        if (active) setResult({ key: lookupKey, limits: currentLimits })
-      })
-      .catch(() => {
-        if (active) setResult({ key: lookupKey, limits: null, error: "No pudimos comprobar la disponibilidad. Intenta de nuevo." })
-      })
-    return () => { active = false }
-  }, [item.product_id, item.sku, item.selected_size, lookupKey])
-
-  const invalidQuantity = !isLoading && !lookupError && !is_valid_cart_quantity(item.quantity, limits)
+  const validation = item_validation[item.id]
+  const isLoading = !validation || validation.status === "pending"
+  const limits = validation?.limits ?? null
   const busy = isLoading || updating !== null
-  const currentMessage = lookupError ?? message ?? (invalidQuantity
-    ? "Cantidad no disponible. Quita el producto y vuelve a agregarlo."
-    : !busy && limits && !can_increment_item(item, limits) ? get_cart_add_quantity_message(limits, item.quantity) : null)
+  const currentMessage = validation?.message ?? (!busy && limits && !can_increment_item(item, limits) ? get_cart_add_quantity_message(limits, item.quantity) : null)
 
   /**
    * Solicita aumentar o reducir la cantidad según el paso del producto.
@@ -56,15 +35,10 @@ export function CartQuantityStepper({ item }: CartQuantityStepperProps) {
    */
   async function handleChange(direction: "increment" | "decrement"): Promise<void> {
     setUpdating(direction)
-    setMessage(null)
     try {
-      const accepted = await (direction === "increment" ? increment_item(item.id) : decrement_item(item.id))
-      if (!accepted) {
-        setMessage("No puedes seleccionar esa cantidad.")
-        setRefresh((previous) => previous + 1)
-      }
+      await (direction === "increment" ? increment_item(item.id) : decrement_item(item.id))
     } catch {
-      setMessage("No pudimos actualizar la cantidad. Intenta nuevamente.")
+      return
     } finally {
       setUpdating(null)
     }
@@ -110,9 +84,7 @@ export function CartQuantityStepper({ item }: CartQuantityStepperProps) {
             : <PlusIcon aria-hidden="true" />}
         </Button>
       </div>
-      {isLoading && <p role="status" className="mt-2 text-xs text-muted-foreground">Comprobando disponibilidad…</p>}
       {currentMessage && <p id={`${id}-message`} role="status" className="mt-2 text-xs text-muted-foreground">{currentMessage}</p>}
-      {lookupError && <Button type="button" variant="link" size="sm" onClick={() => setRefresh((previous) => previous + 1)}>Reintentar</Button>}
     </div>
   )
 }

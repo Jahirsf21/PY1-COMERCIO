@@ -5,10 +5,11 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { SheetClose, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { get_item_subtotal } from "@/lib/cart/cart"
 import { useCart } from "@/lib/cart/cartContext"
+import { CartStatus } from "@/features/cart/components/CartStatus"
 import { format_price } from "@/lib/shared/utils"
 
 export function CartPreview({ onClose }: { onClose: () => void }) {
-  const { cart, subtotal, shipping, tax, total } = useCart()
+  const { cart, subtotal, shipping, tax, total, can_checkout, item_validation } = useCart()
   const currency = cart[0]?.currency ?? "CRC"
 
   return (
@@ -20,6 +21,7 @@ export function CartPreview({ onClose }: { onClose: () => void }) {
       <SheetHeader className="shrink-0 border-b border-input pr-14">
         <SheetTitle>Carrito</SheetTitle>
       </SheetHeader>
+      <CartStatus className="mx-4 my-3 shrink-0" />
       <SheetClose
         aria-label="Cerrar vista previa del carrito"
         render={<Button type="button" variant="ghost" size="icon" className="absolute top-3 right-3 cursor-pointer" />}
@@ -60,9 +62,10 @@ export function CartPreview({ onClose }: { onClose: () => void }) {
                   <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                     <span className="text-xs text-muted-foreground">Cantidad: {item.quantity}</span>
                     <span className="break-words text-sm font-semibold">
-                      {format_price(get_item_subtotal(item), item.currency)}
+                      {item_validation[item.id]?.status === "valid" ? format_price(get_item_subtotal(item), item.currency) : "—"}
                     </span>
                   </div>
+                  {item_validation[item.id]?.message && <p role="status" className="mt-2 text-xs text-muted-foreground">{item_validation[item.id].message}</p>}
                 </div>
               </li>
             ))}
@@ -75,19 +78,19 @@ export function CartPreview({ onClose }: { onClose: () => void }) {
           <dl className="space-y-2 text-sm">
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
               <dt className="text-muted-foreground">Subtotal</dt>
-              <dd className="break-words font-medium">{format_price(subtotal, currency)}</dd>
+              <dd className="break-words font-medium">{can_checkout ? format_price(subtotal, currency) : "—"}</dd>
             </div>
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
               <dt className="text-muted-foreground">Impuestos (13 %)</dt>
-              <dd className="break-words font-medium">{format_price(tax, currency)}</dd>
+              <dd className="break-words font-medium">{can_checkout ? format_price(tax, currency) : "—"}</dd>
             </div>
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
               <dt className="text-muted-foreground">Envío</dt>
-              <dd className="break-words font-medium">{shipping === 0 ? "Gratis" : format_price(shipping, currency)}</dd>
+              <dd className="break-words font-medium">{can_checkout ? shipping === 0 ? "Gratis" : format_price(shipping, currency) : "—"}</dd>
             </div>
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-input pt-3">
               <dt className="font-semibold">Total</dt>
-              <dd className="break-words text-lg font-semibold">{format_price(total, currency)}</dd>
+              <dd className="break-words text-lg font-semibold">{can_checkout ? format_price(total, currency) : "—"}</dd>
             </div>
           </dl>
         )}

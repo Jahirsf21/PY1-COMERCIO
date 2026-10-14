@@ -5,10 +5,11 @@ import { ShopHeader } from "@/components/shop-header"
 import { useCart } from "@/lib/cart/cartContext"
 import { format_price } from "@/lib/shared/utils"
 import { CartItemCard } from "@/features/cart/components/CartItemCard"
+import { CartStatus } from "@/features/cart/components/CartStatus"
 
 
 export default function CartPage() {
-  const { cart, subtotal, shipping, tax, total, total_items: totalUnits } = useCart()
+  const { cart, subtotal, shipping, tax, total, total_items: totalUnits, can_checkout } = useCart()
 
   return (
     <div className="min-h-dvh bg-background">
@@ -29,6 +30,8 @@ export default function CartPage() {
             Revisa los productos antes de continuar
           </p>
         </div>
+
+        <CartStatus className="mb-6" />
 
         {cart.length === 0 ? (
           <section className="flex min-h-80 flex-col items-center justify-center rounded-xl border border-input px-6 py-12 text-center">
@@ -59,24 +62,26 @@ export default function CartPage() {
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                   <dt className="text-muted-foreground">Subtotal</dt>
-                  <dd className="break-words font-medium">{format_price(subtotal, cart[0].currency)}</dd>
+                  <dd className="break-words font-medium">{can_checkout ? format_price(subtotal, cart[0].currency) : "—"}</dd>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                   <dt className="text-muted-foreground">Impuestos (13 %)</dt>
-                  <dd className="break-words font-medium">{format_price(tax, cart[0].currency)}</dd>
+                  <dd className="break-words font-medium">{can_checkout ? format_price(tax, cart[0].currency) : "—"}</dd>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                   <dt className="text-muted-foreground">Envío</dt>
-                  <dd className="break-words font-medium">{shipping === 0 ? "Gratis" : format_price(shipping, cart[0].currency)}</dd>
+                  <dd className="break-words font-medium">{can_checkout ? shipping === 0 ? "Gratis" : format_price(shipping, cart[0].currency) : "—"}</dd>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-input pt-4">
                   <dt className="text-base font-semibold">Total</dt>
-                  <dd className="break-words text-lg font-semibold">{format_price(total, cart[0].currency)}</dd>
+                  <dd className="break-words text-lg font-semibold">{can_checkout ? format_price(total, cart[0].currency) : "—"}</dd>
                 </div>
               </dl>
               <Button
                 nativeButton={false}
                 render={<Link to="/checkout" />}
+                disabled={!can_checkout}
+                onClick={(event) => { if (!can_checkout) event.preventDefault() }}
                 size="lg"
                 className="mt-5 h-11 w-full cursor-pointer"
               >

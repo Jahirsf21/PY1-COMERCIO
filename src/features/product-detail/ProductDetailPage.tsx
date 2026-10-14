@@ -3,7 +3,7 @@ import { Link, useParams, useSearchParams } from "react-router-dom"
 import { ArrowLeftIcon, CheckIcon, MapPinIcon, PackageCheckIcon, StarIcon } from "lucide-react"
 import { cn } from "cn"
 import type { VariantsResult } from "@/lib/catalog/types"
-import { getAvailableQuantityBySize, getProductVariants, getSizesFromStock } from "@/lib/catalog/catalog"
+import { get_available_quantity_by_size, get_product_variants, get_sizes_from_stock } from "@/lib/catalog/catalog"
 import { get_cart_quantity_limits } from "@/lib/cart/cart"
 import { AddToCartForm } from "@/features/product-detail/AddToCartForm"
 import { ShopHeader } from "@/components/shop-header"
@@ -43,7 +43,7 @@ export default function ProductDetailPage() {
   useEffect(() => {
     let active = true;
 
-    getProductVariants(productId)
+    get_product_variants(productId)
       .then((variants) => {
         if (active) setResult({ productId, variants, error: false });
       })
@@ -64,7 +64,7 @@ export default function ProductDetailPage() {
     variants.find((variant) => variant.sku === requestedSku) ??
     variants[0];
   const stockByLocation = selectedVariant?.b2c_stock_by_location ?? [];
-  const sizes = getSizesFromStock(stockByLocation);
+  const sizes = get_sizes_from_stock(stockByLocation);
   const selectedSize =
     selectedVariant?.sku === requestedSku && requestedSize && sizes.includes(requestedSize)
       ? requestedSize
@@ -113,10 +113,10 @@ export default function ProductDetailPage() {
     ? selectedVariant.b2c_price * (1 - discount.percentage / 100)
     : selectedVariant.b2c_price;
   const availableSizes = sizes.filter((size) => {
-    const limits = get_cart_quantity_limits(selectedVariant, getAvailableQuantityBySize(stockByLocation, size));
+    const limits = get_cart_quantity_limits(selectedVariant, get_available_quantity_by_size(stockByLocation, size));
     return limits !== null && limits.max_quantity >= limits.min_quantity;
   }).length;
-  const availableQuantity = selectedSize ? getAvailableQuantityBySize(stockByLocation, selectedSize) : 0;
+  const availableQuantity = selectedSize ? get_available_quantity_by_size(stockByLocation, selectedSize) : 0;
   const quantityLimits = get_cart_quantity_limits(selectedVariant, availableQuantity);
   const isAvailable = quantityLimits !== null && quantityLimits.max_quantity >= quantityLimits.min_quantity;
 
@@ -355,7 +355,7 @@ export default function ProductDetailPage() {
                     </div>
                     <span className="flex items-center gap-1 whitespace-nowrap">
                       <CheckIcon aria-hidden="true" className="size-4" />
-                      {getAvailableQuantityBySize([location], selectedSize)} disponibles
+                      {get_available_quantity_by_size([location], selectedSize)} disponibles
                     </span>
                   </li>
                 ))}

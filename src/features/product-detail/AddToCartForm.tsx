@@ -56,7 +56,7 @@ export function AddToCartForm({
   const quantityHint = canChooseQuantity && cartQuantity === 0 && limits && limits.min_quantity > 1
     ? `Compra mínima: ${limits.min_quantity} unidades.`
     : null
-  const invalidQuantityMessage = canChooseQuantity ? get_cart_quantity_input_message(requestedQuantity, additionalLimits) : null
+  const invalidQuantityMessage = canChooseQuantity ? get_cart_quantity_input_message(quantity, additionalLimits) : null
   const quantityDescriptionIds = [
     quantityHint ? `${id}-quantity-hint` : undefined,
     limitMessage ? `${id}-quantity-limit` : undefined,

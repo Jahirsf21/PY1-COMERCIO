@@ -6,8 +6,10 @@ import { CheckoutDeliveryFields } from "@/features/checkout/components/CheckoutD
 import { get_stored_checkout_form_data, save_checkout_form_data, validate_buyer_fields, validate_delivery_fields } from "@/lib/checkout/checkout"
 import { get_name_from_hacienda, validate_identification } from "@/lib/identification/identification"
 import type { BuyerInfo, DeliveryInfo } from "@/lib/checkout/types"
+import { useCart } from "@/lib/cart/cartContext"
 
 export function CheckoutForm() {
+  const { can_checkout } = useCart()
   const formRef = useRef<HTMLFormElement>(null)
   const [formData, setFormData] = useState(get_stored_checkout_form_data)
   const [buyerErrors, setBuyerErrors] = useState<Partial<Record<keyof BuyerInfo, string>>>({})
@@ -118,6 +120,7 @@ export function CheckoutForm() {
    */
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (!can_checkout) return
     const buyer_errors = validate_buyer_fields(buyer)
     const delivery_errors = validate_delivery_fields(formData.delivery)
 
