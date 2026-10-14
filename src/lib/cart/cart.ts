@@ -1,4 +1,4 @@
-import type { CartProduct, CartItem, CartAction, CartQuantityLimits, CartStorageSnapshot, CartValidationResult } from "@/lib/cart/types"
+import type { CartProduct, CartItem, CartAction, CartQuantityLimits, CartStorageSnapshot, CartValidationResult, CartPagination } from "@/lib/cart/types"
 import type { ProductRecord } from "@/lib/catalog/types"
 
 type QuantityProduct = Pick<CartProduct, "b2c_min_order_quantity" | "b2c_max_order_quantity" | "b2c_step_quantity">
@@ -399,6 +399,34 @@ export function get_cart_total(cart: CartItem[]): number {
  */
 export function get_cart_total_units(cart: CartItem[]): number {
   return cart.reduce((accumulated_units, item) => accumulated_units + item.quantity, 0)
+}
+
+/**
+ * Divide los productos del carrito en páginas de 5 elementos sin modificar el arreglo original.
+ * Cuenta cada combinación SKU+talla como un producto, independientemente de sus unidades.
+ * Ajusta la página solicitada cuando se eliminan productos o el valor recibido no es válido.
+ * @param cart Productos del carrito completo.
+ * @param requested_page Página que se desea mostrar, empezando en 1; por defecto, la primera.
+ * @returns Productos de la página y datos de paginación.
+ *   page_items: hasta 5 productos de la página seleccionada.
+ *   current_page: página seleccionada dentro del rango disponible; 1 si el carrito está vacío.
+ *   total_pages: cantidad de páginas; cero si el carrito está vacío.
+ *   total_products: cantidad de combinaciones SKU+talla, no la suma de sus unidades.
+ */
+export function get_cart_pagination(cart: CartItem[], requested_page = 1): CartPagination {
+  const items_per_page = 4
+  const total_products = cart.length
+  const total_pages = Math.ceil(total_products / items_per_page)
+  const valid_page = Number.isSafeInteger(requested_page) && requested_page > 0 ? requested_page : 1
+  const current_page = Math.min(valid_page, Math.max(total_pages, 1))
+  const first_item_index = (current_page - 1) * items_per_page
+
+  return {
+    page_items: cart.slice(first_item_index, first_item_index + items_per_page),
+    current_page,
+    total_pages,
+    total_products,
+  }
 }
 
 /**
