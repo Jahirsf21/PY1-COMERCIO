@@ -9,7 +9,7 @@ export function CheckoutOrderSummary() {
   const currency = cart[0]?.currency ?? "CRC"
 
   return (
-    <aside aria-labelledby="checkout-order-summary-title" className="min-w-0 rounded-xl border border-input bg-card p-5 lg:sticky lg:top-28">
+    <aside aria-labelledby="checkout-order-summary-title" className="min-w-0 rounded-xl border border-input bg-card p-5 lg:top-28">
       <h2 id="checkout-order-summary-title" className="text-lg font-semibold">2. Resumen de la orden</h2>
       <CartStatus className="mt-4" />
       <ul aria-label="Productos del pedido" className="mt-5 space-y-4">
