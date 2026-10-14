@@ -44,6 +44,17 @@ export type CartQuantityLimits = {
 }
 
 /**
+ * Productos de una página del carrito y datos para recorrer sus páginas.
+ * Cada combinación SKU+talla cuenta como un producto, sin sumar sus unidades.
+ */
+export type CartPagination = {
+  page_items: CartItem[]
+  current_page: number
+  total_pages: number
+  total_products: number
+}
+
+/**
  * Resultado de recuperar el formato histórico del carrito desde el navegador.
  * Los precios recuperados todavía deben comprobarse con el catálogo.
  */
