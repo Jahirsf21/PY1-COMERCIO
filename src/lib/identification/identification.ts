@@ -1,4 +1,4 @@
-import type { BuyerInfo, IdentificationType } from "@/lib/types/checkout";
+import type { BuyerInfo, IdentificationType } from "@/lib/checkout/types";
 
 /**
  * Verifica que un valor contenga únicamente dígitos después de eliminar los espacios externos.

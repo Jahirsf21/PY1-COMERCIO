@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom"
 import { BrandHeader } from "@/components/brand-header"
 import { CartIndicator } from "@/features/cart/components/CartIndicator"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/shared/utils"
 
 /**
  * Muestra la marca y el acceso al carrito, con la opción de permanecer visible durante el desplazamiento.

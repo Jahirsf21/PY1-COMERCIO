@@ -4,7 +4,7 @@ import { ShoppingCartIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetTrigger } from "@/components/ui/sheet"
 import { CartPreview } from "@/features/cart/components/CartPreview"
-import { useCart } from "@/lib/context/useCart"
+import { useCart } from "@/lib/cart/cartContext"
 
 export function CartIndicator() {
   const { total_items: totalUnits } = useCart()

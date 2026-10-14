@@ -1,8 +1,8 @@
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
 import { CheckoutInputField } from "@/features/checkout/components/CheckoutInputField"
 import { CheckoutSelectField } from "@/features/checkout/components/CheckoutSelectField"
-import { get_delivery_cantons, get_delivery_districts, get_delivery_provinces } from "@/lib/checkout"
-import type { DeliveryInfo } from "@/lib/types/checkout"
+import { get_delivery_cantons, get_delivery_districts, get_delivery_provinces } from "@/lib/checkout/checkout"
+import type { DeliveryInfo } from "@/lib/checkout/types"
 
 type CheckoutDeliveryFieldsProps = {
   delivery: DeliveryInfo

@@ -2,11 +2,11 @@ import { Highlight } from "react-instantsearch"
 import { Link } from "react-router-dom"
 import { StarIcon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import type { ProductHit } from "@/lib/types/product"
+import type { ProductHit } from "@/lib/catalog/types"
 import { ProductImagePreview } from "@/features/catalog/components/product/ProductImagePreview"
 import { AddToCartDialog } from "@/features/catalog/components/product/AddToCartDialog"
-import { format_price } from "@/lib/utils"
-import { get_product_unit_price } from "@/lib/cart"
+import { format_price } from "@/lib/shared/utils"
+import { get_product_unit_price } from "@/lib/cart/cart"
 
 export function ProductCard({ hit }: { hit: ProductHit }) {
   return (

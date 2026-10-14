@@ -15,6 +15,6 @@ if (supabaseKey.startsWith('sb_secret_')) {
 }
 
 /**
- * Cliente compartido de Supabase para las operaciones de la aplicación en el navegador.
+ * Cliente compartido del servicio de Supabase para las operaciones en el navegador.
  */
 export const supabase = createClient(supabaseUrl, supabaseKey);

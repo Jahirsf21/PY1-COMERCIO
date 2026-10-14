@@ -5,7 +5,7 @@ import { useSortBy } from "react-instantsearch"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { algolia_indices } from "@/lib/searchClient"
+import { algolia_indices } from "@/lib/algolia/algolia"
 
 const SORT_ITEMS = [
   { label: "Relevancia", value: algolia_indices.main },

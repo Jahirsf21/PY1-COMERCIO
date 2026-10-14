@@ -2,8 +2,8 @@ import { Trash2Icon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { toast } from "@/components/ui/toast"
-import { useCart } from "@/lib/context/useCart"
-import type { CartItem } from "@/lib/types/cart"
+import { useCart } from "@/lib/cart/cartContext"
+import type { CartItem } from "@/lib/cart/types"
 
 type RemoveCartItemDialogProps = {
   item: CartItem

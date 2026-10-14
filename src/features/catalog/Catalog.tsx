@@ -1,5 +1,5 @@
 import { InstantSearch } from "react-instantsearch"
-import { algolia_indices, searchClient } from "@/lib/searchClient"
+import { algolia_indices, searchClient } from "@/lib/algolia/algolia"
 import { SearchBar } from "@/features/catalog/components/search/SearchBar"
 import { FilterPanel } from "@/features/catalog/components/filters/FilterPanel"
 import { ResultsPanel } from "@/features/catalog/components/results/ResultsPanel"

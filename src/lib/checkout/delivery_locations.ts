@@ -1,5 +1,5 @@
 /**
- * Provincias, cantones y distritos de Costa Rica
+ * Provincias, cantones y distritos de Costa Rica para el servicio de checkout.
  */
 export const delivery_locations: Record<string, Record<string, string[]>> = {
   "Limón": {

@@ -3,9 +3,9 @@ import { ShoppingCartIcon, XIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { SheetClose, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { get_item_subtotal } from "@/lib/cart"
-import { useCart } from "@/lib/context/useCart"
-import { format_price } from "@/lib/utils"
+import { get_item_subtotal } from "@/lib/cart/cart"
+import { useCart } from "@/lib/cart/cartContext"
+import { format_price } from "@/lib/shared/utils"
 
 export function CartPreview({ onClose }: { onClose: () => void }) {
   const { cart, subtotal, shipping, tax, total } = useCart()

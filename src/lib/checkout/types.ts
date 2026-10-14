@@ -1,14 +1,48 @@
-import type { BuyerInfo, DeliveryInfo } from "@/lib/types/checkout"
-import type { ProductImage } from "@/lib/types/product"
+import type { ProductImage } from "@/lib/catalog/types"
 
 /**
- * Estados disponibles para un pedido.
+ * Tipos de identificación disponibles para la persona compradora: nacional, extranjero u otro
  */
+export type IdentificationType = "Nacional" | "Extranjero" | "Otro";
+
+/**
+ * Información de identificación y contacto de la persona compradora
+ */
+export type BuyerInfo = {
+    full_name: string
+    identification_type: IdentificationType
+    identification_number: string
+    email: string
+    alternative_email?: string
+    phone_number: string
+    alternative_phone_number?: string
+}
+
+/**
+ * Dirección de entrega del pedido
+ */
+export type DeliveryInfo = {
+    country: string
+    province: string
+    canton: string
+    district: string
+    address: string
+    postal_code: string
+    additional_information: string
+}
+
+/**
+ * Datos del formulario de compra que agrupan la información del comprador y la entrega
+ */
+export type CheckoutFormData = {
+    buyer: BuyerInfo
+    delivery: DeliveryInfo
+}
+
+/** Estados disponibles para un pedido. */
 export type OrderStatus = "PENDING" | "CONFIRMED" | "FAILED"
 
-/**
- * Estados disponibles para un pago.
- */
+/** Estados disponibles para un pago. */
 export type PaymentStatus = "PENDING" | "APPROVE" | "DECLINED" | "ERROR"
 
 /**
@@ -48,9 +82,7 @@ export type Order = {
   status: OrderStatus
 }
 
-/**
- * Monto, moneda y estado del pago de un pedido.
- */
+/** Monto, moneda y estado del pago de un pedido. */
 export type Payment = {
   id: string
   order_id: string

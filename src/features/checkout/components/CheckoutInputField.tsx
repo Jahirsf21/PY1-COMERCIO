@@ -1,7 +1,7 @@
 import type { ComponentProps } from "react"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/shared/utils"
 
 type CheckoutInputFieldProps = ComponentProps<"input"> & {
   id: string

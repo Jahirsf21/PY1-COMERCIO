@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useRange } from "react-instantsearch"
 import { Slider } from "@/components/ui/slider"
-import { format_price } from "@/lib/utils"
+import { format_price } from "@/lib/shared/utils"
 
 export function PriceRangeFilter() {
   const { start, range, canRefine, refine } = useRange({ attribute: "b2c_price" });

@@ -1,8 +1,10 @@
-import { useId, useState } from "react"
+import { useEffect, useId, useState } from "react"
 import { LoaderCircleIcon, MinusIcon, PlusIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useCart } from "@/lib/context/useCart"
-import type { CartItem } from "@/lib/types/cart"
+import { can_decrement_item, can_increment_item, get_cart_add_quantity_message, is_valid_cart_quantity } from "@/lib/cart/cart"
+import { useCart } from "@/lib/cart/cartContext"
+import { getCartQuantityLimits } from "@/lib/catalog/catalog"
+import type { CartItem, CartQuantityLimits } from "@/lib/cart/types"
 
 type CartQuantityStepperProps = {
   item: CartItem
@@ -10,34 +12,62 @@ type CartQuantityStepperProps = {
 
 /**
  * Permite aumentar o reducir las unidades de una línea del carrito.
- * La cantidad mínima es uno: el botón de reducir se deshabilita en ese valor y la línea
- * solo se elimina con su botón "Eliminar", igual que en el detalle del producto.
+ * Respeta el mínimo, el máximo y el paso del producto, consultando su disponibilidad.
+ * La eliminación del producto se realiza únicamente mediante el botón "Eliminar".
+ * @param props Propiedades del componente.
+ * @param props.item Producto del carrito cuya cantidad se desea modificar.
+ * @returns Controles de cantidad con sus mensajes de disponibilidad y estado.
  */
 export function CartQuantityStepper({ item }: CartQuantityStepperProps) {
   const id = useId()
   const { increment_item, decrement_item } = useCart()
-  const [isIncrementing, setIsIncrementing] = useState(false)
+  const [updating, setUpdating] = useState<"increment" | "decrement" | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [refresh, setRefresh] = useState(0)
+  const [result, setResult] = useState<{ key: string; limits: CartQuantityLimits | null; error?: string } | null>(null)
+  const lookupKey = `${item.id}::${item.quantity}::${refresh}`
+  const isLoading = result?.key !== lookupKey
+  const limits = !isLoading ? result.limits : null
+  const lookupError = !isLoading ? result.error : undefined
+
+  useEffect(() => {
+    let active = true
+    getCartQuantityLimits(item.product_id, item.sku, item.selected_size)
+      .then((currentLimits) => {
+        if (active) setResult({ key: lookupKey, limits: currentLimits })
+      })
+      .catch(() => {
+        if (active) setResult({ key: lookupKey, limits: null, error: "No pudimos comprobar la disponibilidad. Intenta de nuevo." })
+      })
+    return () => { active = false }
+  }, [item.product_id, item.sku, item.selected_size, lookupKey])
+
+  const invalidQuantity = !isLoading && !lookupError && !is_valid_cart_quantity(item.quantity, limits)
+  const busy = isLoading || updating !== null
+  const currentMessage = lookupError ?? message ?? (invalidQuantity
+    ? "Cantidad no disponible. Quita el producto y vuelve a agregarlo."
+    : !busy && limits && !can_increment_item(item, limits) ? get_cart_add_quantity_message(limits, item.quantity) : null)
 
   /**
-   * Solicita una unidad más y avisa si el stock actual no lo permite.
+   * Solicita aumentar o reducir la cantidad según el paso del producto.
+   * El proveedor vuelve a consultar las reglas antes de aceptar el cambio.
+   * @param direction Operación que se desea realizar.
+   * @returns Promesa que finaliza al completar la actualización.
    */
-  async function handleIncrement() {
-    setIsIncrementing(true)
+  async function handleChange(direction: "increment" | "decrement"): Promise<void> {
+    setUpdating(direction)
     setMessage(null)
     try {
-      const accepted = await increment_item(item.id)
-      if (!accepted) setMessage("No hay más unidades disponibles de esta talla.")
+      const accepted = await (direction === "increment" ? increment_item(item.id) : decrement_item(item.id))
+      if (!accepted) {
+        setMessage("No puedes seleccionar esa cantidad.")
+        setRefresh((previous) => previous + 1)
+      }
     } catch {
       setMessage("No pudimos actualizar la cantidad. Intenta nuevamente.")
     } finally {
-      setIsIncrementing(false)
+      setUpdating(null)
     }
-  }
-
-  function handleDecrement() {
-    setMessage(null)
-    decrement_item(item.id)
   }
 
   return (
@@ -45,7 +75,8 @@ export function CartQuantityStepper({ item }: CartQuantityStepperProps) {
       <div
         role="group"
         aria-label={`Cantidad de ${item.title}`}
-        aria-describedby={message ? `${id}-message` : undefined}
+        aria-describedby={currentMessage ? `${id}-message` : undefined}
+        aria-busy={busy}
         className="inline-flex items-center rounded-lg border border-input bg-background"
       >
         <Button
@@ -54,16 +85,14 @@ export function CartQuantityStepper({ item }: CartQuantityStepperProps) {
           size="icon"
           className="size-9 cursor-pointer rounded-r-none"
           aria-label={`Reducir cantidad de ${item.title}`}
-          disabled={item.quantity <= 1 || isIncrementing}
-          onClick={handleDecrement}
+          disabled={busy || !can_decrement_item(item, limits)}
+          onClick={() => handleChange("decrement")}
         >
-          <MinusIcon aria-hidden="true" />
+          {updating === "decrement"
+            ? <LoaderCircleIcon aria-hidden="true" className="animate-spin motion-reduce:animate-none" />
+            : <MinusIcon aria-hidden="true" />}
         </Button>
-        <span
-          aria-live="polite"
-          aria-atomic="true"
-          className="min-w-10 border-x border-input px-2 text-center text-sm font-medium tabular-nums"
-        >
+        <span aria-live="polite" aria-atomic="true" className="min-w-10 border-x border-input px-2 text-center text-sm font-medium tabular-nums">
           <span className="sr-only">Cantidad: </span>
           {item.quantity}
         </span>
@@ -73,20 +102,17 @@ export function CartQuantityStepper({ item }: CartQuantityStepperProps) {
           size="icon"
           className="size-9 cursor-pointer rounded-l-none"
           aria-label={`Aumentar cantidad de ${item.title}`}
-          aria-busy={isIncrementing}
-          disabled={isIncrementing}
-          onClick={handleIncrement}
+          disabled={busy || !can_increment_item(item, limits)}
+          onClick={() => handleChange("increment")}
         >
-          {isIncrementing
+          {updating === "increment"
             ? <LoaderCircleIcon aria-hidden="true" className="animate-spin motion-reduce:animate-none" />
             : <PlusIcon aria-hidden="true" />}
         </Button>
       </div>
-      {message && (
-        <p id={`${id}-message`} role="status" className="mt-2 text-xs text-muted-foreground">
-          {message}
-        </p>
-      )}
+      {isLoading && <p role="status" className="mt-2 text-xs text-muted-foreground">Comprobando disponibilidad…</p>}
+      {currentMessage && <p id={`${id}-message`} role="status" className="mt-2 text-xs text-muted-foreground">{currentMessage}</p>}
+      {lookupError && <Button type="button" variant="link" size="sm" onClick={() => setRefresh((previous) => previous + 1)}>Reintentar</Button>}
     </div>
   )
 }
