@@ -102,4 +102,15 @@ export type VariantsResult = {
   error: boolean
 }
 
+/**
+ * Resultado de consultar las sugerencias para el producto mostrado en el detalle.
+ * request_key permite descartar respuestas de otro producto o de un intento anterior.
+ * Este resultado no se persiste ni modifica la selección de variante y talla.
+ */
+export type ProductSuggestionsResult = {
+  request_key: string
+  products: ProductHit[]
+  has_error: boolean
+}
+
 export type ProductHit = Hit<ProductRecord>

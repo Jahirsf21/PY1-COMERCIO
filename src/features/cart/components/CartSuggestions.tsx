@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react"
+import { ProductSuggestionsList } from "@/components/product-suggestions-list"
 import { Button } from "@/components/ui/button"
-import { ProductCard } from "@/features/catalog/components/product/ProductCard"
 import { get_cart_suggestions } from "@/lib/cart/cart"
 import { useCart } from "@/lib/cart/cartContext"
 import type { CartSuggestionsResult } from "@/lib/cart/types"
 
 /**
- * Muestra productos sugeridos según las categorías de todo el carrito.
+ * Muestra hasta 20 productos sugeridos según las categorías de todo el carrito, en grupos de 4.
  * Actualiza las sugerencias al agregar o quitar productos, sin repetir consultas al cambiar cantidades o páginas.
  * Los errores de esta sección no bloquean la compra y permiten reintentar la consulta.
  * @returns Sección de sugerencias con sus estados de carga, error y ausencia de coincidencias.
@@ -37,10 +37,11 @@ export function CartSuggestions() {
   const is_loading = suggestion_result?.request_key !== request_key
   const has_error = !is_loading && suggestion_result.has_error
   const products = !is_loading ? suggestion_result.products : []
+  const suggestions_title = <h2 id="cart-suggestions-title" className="text-xl font-semibold">Productos sugeridos</h2>
 
   return (
     <section aria-labelledby="cart-suggestions-title" aria-busy={is_loading} className="mt-6">
-      <h2 id="cart-suggestions-title" className="text-xl font-semibold">Productos sugeridos</h2>
+      {products.length === 0 && suggestions_title}
       {is_loading ? (
         <p role="status" className="mt-4 text-sm text-muted-foreground">Cargando sugerencias…</p>
       ) : has_error ? (
@@ -51,13 +52,7 @@ export function CartSuggestions() {
       ) : products.length === 0 ? (
         <p role="status" className="mt-4 text-sm text-muted-foreground">No hay sugerencias disponibles por el momento.</p>
       ) : (
-        <ul aria-label="Productos sugeridos" className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {products.map((product) => (
-            <li key={product.product_id} className="grid min-w-0">
-              <ProductCard hit={product} />
-            </li>
-          ))}
-        </ul>
+        <ProductSuggestionsList key={request_key} products={products} title={suggestions_title} />
       )}
     </section>
   )
