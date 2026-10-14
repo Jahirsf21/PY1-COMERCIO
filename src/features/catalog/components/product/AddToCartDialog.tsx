@@ -6,12 +6,11 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { toast } from "@/components/ui/toast"
-import { get_cart_item_id, get_product_unit_price } from "@/lib/cart"
-import { useCart } from "@/lib/context/useCart"
-import { getProductVariants } from "@/lib/getProductVariants"
-import { getAvailableQuantityBySize, getSizesFromStock } from "@/lib/getProductStock"
-import type { ProductHit, VariantsResult } from "@/lib/types/product"
-import { cn, format_price } from "@/lib/utils"
+import { get_cart_add_quantity_limits, get_cart_add_quantity_message, get_cart_item_id, get_cart_quantity_limits, get_product_unit_price, is_valid_cart_quantity } from "@/lib/cart/cart"
+import { useCart } from "@/lib/cart/cartContext"
+import { getAvailableQuantityBySize, getProductVariants, getSizesFromStock } from "@/lib/catalog/catalog"
+import type { ProductHit, VariantsResult } from "@/lib/catalog/types"
+import { cn, format_price } from "@/lib/shared/utils"
 
 export function AddToCartDialog({ hit }: { hit: ProductHit }) {
   const id = useId()
@@ -44,12 +43,19 @@ export function AddToCartDialog({ hit }: { hit: ProductHit }) {
   const preview = selectedVariant ?? hit
   const locations = selectedVariant?.b2c_stock_by_location ?? []
   const sizes = getSizesFromStock(locations)
-  const availableSizes = sizes.filter((size) => getAvailableQuantityBySize(locations, size) > 0).length
+  const availableSizes = sizes.filter((size) => {
+    const limits = selectedVariant ? get_cart_quantity_limits(selectedVariant, getAvailableQuantityBySize(locations, size)) : null
+    return limits !== null && limits.max_quantity >= limits.min_quantity
+  }).length
   const availableQuantity = selectedSize ? getAvailableQuantityBySize(locations, selectedSize) : 0
   const cartQuantity = selectedVariant && selectedSize
     ? cart.find((item) => item.id === get_cart_item_id(selectedVariant.sku, selectedSize))?.quantity ?? 0
     : 0
-  const canAdd = Boolean(selectedVariant && selectedSize && availableQuantity > cartQuantity && !isSubmitting)
+  const limits = selectedVariant ? get_cart_quantity_limits(selectedVariant, availableQuantity) : null
+  const additionalLimits = get_cart_add_quantity_limits(limits, cartQuantity)
+  const quantityToAdd = additionalLimits?.min_quantity ?? 0
+  const limitMessage = selectedSize ? get_cart_add_quantity_message(limits, cartQuantity) : null
+  const canAdd = Boolean(selectedVariant && selectedSize && is_valid_cart_quantity(quantityToAdd, additionalLimits) && !isSubmitting)
   const detailParams = new URLSearchParams({ variante: preview.sku })
   if (selectedSize) detailParams.set("talla", selectedSize)
 
@@ -71,13 +77,17 @@ export function AddToCartDialog({ hit }: { hit: ProductHit }) {
     setError(null)
 
     try {
-      const accepted = await add_to_cart(selectedVariant, selectedSize)
+      const accepted = await add_to_cart(selectedVariant, selectedSize, quantityToAdd)
       if (!accepted) {
-        setError("No hay suficientes unidades disponibles de esta talla. Prueba otra talla o color.")
+        setError("No pudimos agregar el producto. Prueba otra talla o color.")
         return
       }
       setOpen(false)
-      toast.add({ title: "Producto agregado al carrito", type: "success" })
+      toast.add({
+        title: "Producto agregado al carrito",
+        description: `${quantityToAdd} ${quantityToAdd === 1 ? "unidad añadida" : "unidades añadidas"} · Talla ${selectedSize}`,
+        type: "success",
+      })
     } catch {
       setError("No pudimos agregar el producto. Intenta nuevamente.")
     } finally {
@@ -138,11 +148,11 @@ export function AddToCartDialog({ hit }: { hit: ProductHit }) {
                 )}
                 {result?.error && (
                   <p role="alert" className="text-sm text-destructive">
-                    No pudimos cargar las variantes. Cierra el modal y vuelve a intentarlo.
+                    No pudimos cargar el producto. Cierra esta ventana e inténtalo de nuevo.
                   </p>
                 )}
                 {!isLoading && !result?.error && variants.length === 0 && (
-                  <p role="alert" className="text-sm text-destructive">Este producto no tiene variantes disponibles.</p>
+                  <p role="alert" className="text-sm text-destructive">Este producto no está disponible por el momento.</p>
                 )}
 
                 <div className="space-y-4 border-t border-input pt-5">
@@ -184,13 +194,14 @@ export function AddToCartDialog({ hit }: { hit: ProductHit }) {
                     </div>
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {sizes.map((size) => {
-                        const isAvailable = getAvailableQuantityBySize(locations, size) > 0
+                        const sizeLimits = selectedVariant ? get_cart_quantity_limits(selectedVariant, getAvailableQuantityBySize(locations, size)) : null
+                        const isAvailable = sizeLimits !== null && sizeLimits.max_quantity >= sizeLimits.min_quantity
                         return (
                           <button
                             key={size}
                             type="button"
                             aria-pressed={selectedSize === size}
-                            aria-label={isAvailable ? size : `${size} · Agotada`}
+                            aria-label={isAvailable ? size : `${size} · No disponible`}
                             disabled={!isAvailable || isSubmitting}
                             className={cn(
                               "min-h-12 cursor-pointer rounded-md border px-2 py-2 text-sm outline-none transition-colors hover:border-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none",
@@ -219,11 +230,7 @@ export function AddToCartDialog({ hit }: { hit: ProductHit }) {
                     <p className="text-sm text-muted-foreground">
                       {!selectedSize
                         ? sizes.length > 0 ? "Selecciona una talla para agregar el producto." : "Este color no tiene tallas disponibles."
-                        : availableQuantity <= 0
-                          ? "Esta talla está agotada."
-                          : cartQuantity >= availableQuantity
-                            ? `No puedes añadir más al carrito — tenemos ${availableQuantity} ${availableQuantity === 1 ? "unidad disponible" : "unidades disponibles"} y ya has añadido ${cartQuantity} ${cartQuantity === 1 ? "unidad" : "unidades"} a tu carrito.`
-                            : `${availableQuantity} ${availableQuantity === 1 ? "unidad disponible" : "unidades disponibles"}`}
+                        : limitMessage ?? (quantityToAdd > 1 ? `Se añadirán ${quantityToAdd} unidades.` : "Disponible")}
                     </p>
                   )}
                 </div>

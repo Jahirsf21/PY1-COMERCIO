@@ -4,10 +4,10 @@ import { LoaderCircleIcon, MinusIcon, PlusIcon, ShoppingCartIcon } from "lucide-
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/toast"
-import { get_cart_item_id, get_product_unit_price } from "@/lib/cart"
-import { useCart } from "@/lib/context/useCart"
-import type { ProductHit } from "@/lib/types/product"
-import { format_price } from "@/lib/utils"
+import { get_cart_add_quantity_limits, get_cart_add_quantity_message, get_cart_item_id, get_cart_quantity_input_message, get_cart_quantity_limits, get_product_unit_price, is_valid_cart_quantity } from "@/lib/cart/cart"
+import { useCart } from "@/lib/cart/cartContext"
+import type { ProductHit } from "@/lib/catalog/types"
+import { format_price } from "@/lib/shared/utils"
 
 type AddToCartFormProps = {
   product: ProductHit
@@ -19,7 +19,14 @@ type AddToCartFormProps = {
 
 /**
  * Permite elegir cuántas unidades de la variante y talla se añadirán desde el detalle.
- * Descuenta las unidades del carrito del stock disponible y muestra el subtotal a agregar.
+ * Respeta mínimo, máximo y paso sobre la cantidad acumulada de SKU+talla.
+ * @param props Propiedades del componente.
+ * @param props.product Variante del producto que se desea agregar.
+ * @param props.selectedSize Talla seleccionada, o null si no se ha elegido.
+ * @param props.availableQuantity Unidades disponibles de la talla seleccionada.
+ * @param props.isSubmitting Indica si se está procesando una adición al carrito.
+ * @param props.onSubmittingChange Actualiza el estado de envío.
+ * @returns Formulario de cantidad con el subtotal y la acción de agregar al carrito.
  */
 export function AddToCartForm({
   product,
@@ -30,32 +37,50 @@ export function AddToCartForm({
 }: AddToCartFormProps) {
   const id = useId()
   const { cart, add_to_cart } = useCart()
-  const [quantity, setQuantity] = useState("1")
+  const [quantityInput, setQuantityInput] = useState<{ cartQuantity: number; value: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const cartQuantity = selectedSize
     ? cart.find((item) => item.id === get_cart_item_id(product.sku, selectedSize))?.quantity ?? 0
     : 0
-  const maxQuantity = Math.max(0, availableQuantity - cartQuantity)
+  const limits = get_cart_quantity_limits(product, availableQuantity)
+  const additionalLimits = get_cart_add_quantity_limits(limits, cartQuantity)
+  const minQuantity = additionalLimits?.min_quantity ?? 1
+  const maxQuantity = additionalLimits?.max_quantity ?? 0
+  const stepQuantity = additionalLimits?.step_quantity ?? 1
+  const quantity = quantityInput?.cartQuantity === cartQuantity ? quantityInput.value : String(minQuantity)
   const requestedQuantity = Number(quantity)
-  const isValidQuantity = Number.isInteger(requestedQuantity) && requestedQuantity >= 1 && requestedQuantity <= maxQuantity
-  const canChooseQuantity = Boolean(selectedSize && maxQuantity > 0)
+  const isValidQuantity = is_valid_cart_quantity(requestedQuantity, additionalLimits)
+  const canChooseQuantity = Boolean(selectedSize && additionalLimits && maxQuantity >= minQuantity)
   const canAdd = canChooseQuantity && isValidQuantity && !isSubmitting
-  const stockLimitReached = Boolean(selectedSize && availableQuantity > 0 && cartQuantity >= availableQuantity)
+  const limitMessage = selectedSize ? get_cart_add_quantity_message(limits, cartQuantity) : null
+  const quantityHint = canChooseQuantity && cartQuantity === 0 && limits && limits.min_quantity > 1
+    ? `Compra mínima: ${limits.min_quantity} unidades.`
+    : null
+  const invalidQuantityMessage = canChooseQuantity ? get_cart_quantity_input_message(requestedQuantity, additionalLimits) : null
   const quantityDescriptionIds = [
-    stockLimitReached ? `${id}-stock-limit` : undefined,
+    quantityHint ? `${id}-quantity-hint` : undefined,
+    limitMessage ? `${id}-quantity-limit` : undefined,
+    invalidQuantityMessage ? `${id}-quantity-invalid` : undefined,
     error ? `${id}-error` : undefined,
   ].filter(Boolean).join(" ") || undefined
 
-  function handleQuantityChange(nextQuantity: string) {
-    setQuantity(nextQuantity)
+  /**
+   * Actualiza la cantidad ingresada y descarta el error de la solicitud anterior.
+   * @param nextQuantity Nuevo valor del campo de cantidad.
+   * @returns No retorna ningún valor.
+   */
+  function handleQuantityChange(nextQuantity: string): void {
+    setQuantityInput({ cartQuantity, value: nextQuantity })
     setError(null)
   }
 
   /**
-   * Agrega toda la cantidad solicitada en una sola acción, validando nuevamente el stock.
+   * Agrega toda la cantidad solicitada en una sola acción.
+   * Valida nuevamente las reglas de cantidad y el stock antes de confirmar la adición.
    * @param event Evento de envío del formulario.
+   * @returns Promesa que finaliza al completar la solicitud.
    */
-  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
     if (!selectedSize || !canAdd) return
     onSubmittingChange(true)
@@ -64,10 +89,10 @@ export function AddToCartForm({
     try {
       const accepted = await add_to_cart(product, selectedSize, requestedQuantity)
       if (!accepted) {
-        setError("No hay suficientes unidades disponibles para esta cantidad. Reduce la cantidad o prueba otra talla o color.")
+        setError("Esa cantidad no está disponible. Prueba con otra cantidad o talla.")
         return
       }
-      setQuantity("1")
+      setQuantityInput(null)
       toast.add({
         title: "Producto agregado al carrito",
         description: `${requestedQuantity} ${requestedQuantity === 1 ? "unidad añadida" : "unidades añadidas"} · Talla ${selectedSize}`,
@@ -91,8 +116,8 @@ export function AddToCartForm({
             size="icon-lg"
             className="size-11 cursor-pointer"
             aria-label="Reducir cantidad"
-            disabled={!canChooseQuantity || isSubmitting || !Number.isInteger(requestedQuantity) || requestedQuantity <= 1}
-            onClick={() => handleQuantityChange(String(requestedQuantity - 1))}
+            disabled={!canChooseQuantity || isSubmitting || !is_valid_cart_quantity(requestedQuantity - stepQuantity, additionalLimits)}
+            onClick={() => handleQuantityChange(String(requestedQuantity - stepQuantity))}
           >
             <MinusIcon aria-hidden="true" />
           </Button>
@@ -101,9 +126,9 @@ export function AddToCartForm({
             name="quantity"
             type="number"
             inputMode="numeric"
-            min={1}
+            min={minQuantity}
             max={maxQuantity > 0 ? maxQuantity : undefined}
-            step={1}
+            step={stepQuantity}
             required
             value={quantity}
             disabled={!canChooseQuantity || isSubmitting}
@@ -118,17 +143,15 @@ export function AddToCartForm({
             size="icon-lg"
             className="size-11 cursor-pointer"
             aria-label="Aumentar cantidad"
-            disabled={!canChooseQuantity || isSubmitting || !Number.isInteger(requestedQuantity) || requestedQuantity >= maxQuantity}
-            onClick={() => handleQuantityChange(String(Math.max(1, requestedQuantity + 1)))}
+            disabled={!canChooseQuantity || isSubmitting || !is_valid_cart_quantity(requestedQuantity + stepQuantity, additionalLimits)}
+            onClick={() => handleQuantityChange(String(requestedQuantity + stepQuantity))}
           >
             <PlusIcon aria-hidden="true" />
           </Button>
         </div>
-        {stockLimitReached && (
-          <p id={`${id}-stock-limit`} role="status" className="text-sm text-muted-foreground">
-            {`No puedes añadir más al carrito — tenemos ${availableQuantity} ${availableQuantity === 1 ? "unidad disponible" : "unidades disponibles"} y ya has añadido ${cartQuantity} ${cartQuantity === 1 ? "unidad" : "unidades"} a tu carrito.`}
-          </p>
-        )}
+        {quantityHint && <p id={`${id}-quantity-hint`} className="text-sm text-muted-foreground">{quantityHint}</p>}
+        {limitMessage && <p id={`${id}-quantity-limit`} role="status" className="text-sm text-muted-foreground">{limitMessage}</p>}
+        {invalidQuantityMessage && <p id={`${id}-quantity-invalid`} className="text-sm text-destructive">{invalidQuantityMessage}</p>}
       </div>
 
       <div className="flex items-center justify-between gap-3">

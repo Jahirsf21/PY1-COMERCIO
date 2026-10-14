@@ -3,9 +3,9 @@ import type { SubmitEvent } from "react"
 import { FieldGroup, FieldSeparator } from "@/components/ui/field"
 import { CheckoutBuyerFields } from "@/features/checkout/components/CheckoutBuyerFields"
 import { CheckoutDeliveryFields } from "@/features/checkout/components/CheckoutDeliveryFields"
-import { get_stored_checkout_form_data, save_checkout_form_data, validate_buyer_fields, validate_delivery_fields } from "@/lib/checkout"
-import { get_name_from_hacienda, validate_identification } from "@/lib/identification"
-import type { BuyerInfo, DeliveryInfo } from "@/lib/types/checkout"
+import { get_stored_checkout_form_data, save_checkout_form_data, validate_buyer_fields, validate_delivery_fields } from "@/lib/checkout/checkout"
+import { get_name_from_hacienda, validate_identification } from "@/lib/identification/identification"
+import type { BuyerInfo, DeliveryInfo } from "@/lib/checkout/types"
 
 export function CheckoutForm() {
   const formRef = useRef<HTMLFormElement>(null)

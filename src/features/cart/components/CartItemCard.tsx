@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom"
 import { CartQuantityStepper } from "@/features/cart/components/CartQuantityStepper"
 import { RemoveCartItemDialog } from "@/features/cart/components/RemoveCartItemDialog"
-import { get_item_subtotal } from "@/lib/cart"
-import type { CartItem } from "@/lib/types/cart"
-import { format_price } from "@/lib/utils"
+import { get_item_subtotal } from "@/lib/cart/cart"
+import type { CartItem } from "@/lib/cart/types"
+import { format_price } from "@/lib/shared/utils"
 
 type CartItemCardProps = {
   item: CartItem

@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { CartItemCard } from "@/features/cart/components/CartItemCard"
-import { useCart } from "@/lib/context/useCart"
-import { format_price } from "@/lib/utils"
+import { useCart } from "@/lib/cart/cartContext"
+import { format_price } from "@/lib/shared/utils"
 
 export function CheckoutOrderSummary() {
   const { cart, subtotal, shipping, tax, total, total_items: totalUnits } = useCart()

@@ -1,4 +1,4 @@
-import type { ProductImage, Discount } from "@/lib/types/product"
+import type { ProductImage, Discount } from "@/lib/catalog/types"
 
 /**
  * Información del producto necesaria para agregarlo al carrito
@@ -12,6 +12,9 @@ export type CartProduct = {
   b2c_price: number
   b2c_discount?: Discount
   on_discount: boolean
+  b2c_min_order_quantity: number
+  b2c_max_order_quantity: number
+  b2c_step_quantity: number
 }
 
 /**
@@ -30,29 +33,41 @@ export type CartItem = {
 }
 
 /**
- * Acciones disponibles para modificar el estado del carrito
- * max_quantity es un límite recién consultado, no un dato persistido del carrito.
+ * Límites vigentes de una línea SKU+talla; max_quantity ya contempla el stock
+ * y está alineado a la secuencia min_quantity + n * step_quantity.
+ * Estos límites se consultan por separado y no se persisten en el carrito.
+ */
+export type CartQuantityLimits = {
+  min_quantity: number
+  max_quantity: number
+  step_quantity: number
+}
+
+/**
+ * Acciones disponibles para modificar el estado del carrito.
+ * Cada cambio de cantidad lleva límites recién consultados.
  */
 export type CartAction =
   | {
     type: "add"
     item: CartItem
-    max_quantity: number
+    limits: CartQuantityLimits
   }
   | {
     type: "set_quantity"
     item_id: string
     quantity: number
-    max_quantity: number
+    limits: CartQuantityLimits
   }
   | {
     type: "increment"
     item_id: string
-    max_quantity: number
+    limits: CartQuantityLimits
   }
   | {
     type: "decrement"
     item_id: string
+    limits: CartQuantityLimits
   }
   | {
     type: "remove"
@@ -75,7 +90,7 @@ export type CartContextValue = {
   add_to_cart: (product: CartProduct, selected_size: string, quantity?: number) => Promise<boolean>
   set_quantity: (item_id: string, quantity: number) => Promise<void>
   increment_item: (item_id: string) => Promise<boolean>
-  decrement_item: (item_id: string) => void
+  decrement_item: (item_id: string) => Promise<boolean>
   remove_item: (item_id: string) => void
   clear_cart: () => void
 }

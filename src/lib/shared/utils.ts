@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Formatea un importe con la moneda indicada y dos decimales
+ * Formatea un importe con la moneda indicada y dos decimales.
  * 
  * @param {number} value Importe que se mostrará.
  * @param {string} currency Código de moneda del importe

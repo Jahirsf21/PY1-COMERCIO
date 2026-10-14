@@ -55,7 +55,7 @@ export type ProductFacets = {
 }
 
 /**
- * Esquema del producto recibido
+ * Esquema del producto recibido por el servicio de catálogo.
  */
 export type ProductRecord = {
   objectID: string

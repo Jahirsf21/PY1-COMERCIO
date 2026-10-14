@@ -1,12 +1,12 @@
-import { delivery_locations, delivery_postal_code_ranges } from "@/lib/data/delivery_locations"
+import { delivery_locations, delivery_postal_code_ranges } from "@/lib/checkout/delivery_locations"
 import {
   validate_email,
   validate_full_name,
   validate_identification_number,
   validate_identification_type,
   validate_phone_number,
-} from "@/lib/identification"
-import type { BuyerInfo, CheckoutFormData, DeliveryInfo } from "@/lib/types/checkout"
+} from "@/lib/identification/identification"
+import type { BuyerInfo, CheckoutFormData, DeliveryInfo } from "@/lib/checkout/types"
 
 /**
  * Construye los valores iniciales del formulario de compra.

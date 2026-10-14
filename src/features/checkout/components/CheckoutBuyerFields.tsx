@@ -1,7 +1,7 @@
 import { FieldGroup, FieldLegend, FieldSet } from "@/components/ui/field"
 import { CheckoutInputField } from "@/features/checkout/components/CheckoutInputField"
 import { CheckoutSelectField } from "@/features/checkout/components/CheckoutSelectField"
-import type { BuyerInfo, IdentificationType } from "@/lib/types/checkout"
+import type { BuyerInfo, IdentificationType } from "@/lib/checkout/types"
 
 type CheckoutBuyerFieldsProps = {
   buyer: BuyerInfo

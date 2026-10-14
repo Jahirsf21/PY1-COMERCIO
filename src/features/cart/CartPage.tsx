@@ -2,8 +2,8 @@ import { Link } from "react-router-dom"
 import { ArrowLeftIcon, ShoppingCartIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ShopHeader } from "@/components/shop-header"
-import { useCart } from "@/lib/context/useCart"
-import { format_price } from "@/lib/utils"
+import { useCart } from "@/lib/cart/cartContext"
+import { format_price } from "@/lib/shared/utils"
 import { CartItemCard } from "@/features/cart/components/CartItemCard"
 
 
