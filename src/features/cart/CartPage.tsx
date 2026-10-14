@@ -9,6 +9,7 @@ import { get_cart_pagination } from "@/lib/cart/cart"
 import { format_price } from "@/lib/shared/utils"
 import { CartItemCard } from "@/features/cart/components/CartItemCard"
 import { CartStatus } from "@/features/cart/components/CartStatus"
+import { CartSuggestions } from "@/features/cart/components/CartSuggestions"
 
 
 export default function CartPage() {
@@ -130,7 +131,7 @@ export default function CartPage() {
                 </Pagination>
               )}
             </div>
-            <aside className="min-w-0 rounded-xl border border-input bg-card p-5 lg:sticky lg:top-28">
+            <aside className="min-w-0 rounded-xl border border-input bg-card p-5 lg:top-28">
               <h2 className="text-lg font-semibold">Resumen del carrito</h2>
               <dl className="mt-4 space-y-3 text-sm">
                 <div className="flex items-center justify-between gap-3">
@@ -167,6 +168,7 @@ export default function CartPage() {
             </aside>
           </div>
         )}
+        {cart.length > 0 && <CartSuggestions />}
       </main>
     </div>
   )

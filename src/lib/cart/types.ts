@@ -1,4 +1,4 @@
-import type { ProductImage, Discount } from "@/lib/catalog/types"
+import type { ProductImage, Discount, ProductHit } from "@/lib/catalog/types"
 
 /**
  * Información del producto necesaria para agregarlo al carrito
@@ -52,6 +52,17 @@ export type CartPagination = {
   current_page: number
   total_pages: number
   total_products: number
+}
+
+/**
+ * Resultado de consultar las sugerencias para un conjunto de productos del carrito.
+ * request_key permite descartar resultados que ya no corresponden a la selección actual.
+ * Este resultado no se persiste ni interviene en la validación de la compra.
+ */
+export type CartSuggestionsResult = {
+  request_key: string
+  products: ProductHit[]
+  has_error: boolean
 }
 
 /**
