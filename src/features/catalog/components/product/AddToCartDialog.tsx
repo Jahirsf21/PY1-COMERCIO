@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { toast } from "@/components/ui/toast"
 import { get_cart_add_quantity_limits, get_cart_add_quantity_message, get_cart_item_id, get_cart_quantity_limits, get_product_unit_price, is_valid_cart_quantity } from "@/lib/cart/cart"
 import { useCart } from "@/lib/cart/cartContext"
-import { getAvailableQuantityBySize, getProductVariants, getSizesFromStock } from "@/lib/catalog/catalog"
+import { get_available_quantity_by_size, get_product_variants, get_sizes_from_stock } from "@/lib/catalog/catalog"
 import type { ProductHit, VariantsResult } from "@/lib/catalog/types"
 import { cn, format_price } from "@/lib/shared/utils"
 
@@ -26,7 +26,7 @@ export function AddToCartDialog({ hit }: { hit: ProductHit }) {
     if (!open) return
     let active = true
 
-    getProductVariants(hit.product_id)
+    get_product_variants(hit.product_id)
       .then((variants) => {
         if (active) setResult({ productId: hit.product_id, variants, error: false })
       })
@@ -42,12 +42,12 @@ export function AddToCartDialog({ hit }: { hit: ProductHit }) {
   const selectedVariant = variants.find((variant) => variant.sku === selectedSku) ?? variants[0]
   const preview = selectedVariant ?? hit
   const locations = selectedVariant?.b2c_stock_by_location ?? []
-  const sizes = getSizesFromStock(locations)
+  const sizes = get_sizes_from_stock(locations)
   const availableSizes = sizes.filter((size) => {
-    const limits = selectedVariant ? get_cart_quantity_limits(selectedVariant, getAvailableQuantityBySize(locations, size)) : null
+    const limits = selectedVariant ? get_cart_quantity_limits(selectedVariant, get_available_quantity_by_size(locations, size)) : null
     return limits !== null && limits.max_quantity >= limits.min_quantity
   }).length
-  const availableQuantity = selectedSize ? getAvailableQuantityBySize(locations, selectedSize) : 0
+  const availableQuantity = selectedSize ? get_available_quantity_by_size(locations, selectedSize) : 0
   const cartQuantity = selectedVariant && selectedSize
     ? cart.find((item) => item.id === get_cart_item_id(selectedVariant.sku, selectedSize))?.quantity ?? 0
     : 0
@@ -194,7 +194,7 @@ export function AddToCartDialog({ hit }: { hit: ProductHit }) {
                     </div>
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {sizes.map((size) => {
-                        const sizeLimits = selectedVariant ? get_cart_quantity_limits(selectedVariant, getAvailableQuantityBySize(locations, size)) : null
+                        const sizeLimits = selectedVariant ? get_cart_quantity_limits(selectedVariant, get_available_quantity_by_size(locations, size)) : null
                         const isAvailable = sizeLimits !== null && sizeLimits.max_quantity >= sizeLimits.min_quantity
                         return (
                           <button

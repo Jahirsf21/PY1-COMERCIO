@@ -44,6 +44,33 @@ export type CartQuantityLimits = {
 }
 
 /**
+ * Resultado de recuperar el formato histórico del carrito desde el navegador.
+ * Los precios recuperados todavía deben comprobarse con el catálogo.
+ */
+export type CartStorageSnapshot = {
+  cart: CartItem[]
+  discarded_items: boolean
+  storage_error: boolean
+}
+
+/**
+ * Estado temporal de comprobación de una línea; nunca se guarda en localStorage.
+ */
+export type CartItemValidation = {
+  status: "pending" | "valid" | "unavailable" | "invalid_quantity" | "error"
+  limits: CartQuantityLimits | null
+  message?: string
+}
+
+/**
+ * Conserva la referencia consultada para no sobrescribir modificaciones posteriores.
+ */
+export type CartValidationResult = CartItemValidation & {
+  original_item: CartItem
+  item: CartItem
+}
+
+/**
  * Acciones disponibles para modificar el estado del carrito.
  * Cada cambio de cantidad lleva límites recién consultados.
  */
@@ -76,6 +103,10 @@ export type CartAction =
   | {
     type: "clear"
   }
+  | {
+    type: "refresh"
+    results: CartValidationResult[]
+  }
 
 /**
  * Estado y operaciones expuestas por el contexto del carrito
@@ -87,6 +118,13 @@ export type CartContextValue = {
   tax: number
   total: number
   total_items: number
+  item_validation: Record<string, CartItemValidation>
+  is_validating: boolean
+  can_checkout: boolean
+  storage_error: boolean
+  notice: string | null
+  revalidate_cart: () => void
+  dismiss_notice: () => void
   add_to_cart: (product: CartProduct, selected_size: string, quantity?: number) => Promise<boolean>
   set_quantity: (item_id: string, quantity: number) => Promise<void>
   increment_item: (item_id: string) => Promise<boolean>

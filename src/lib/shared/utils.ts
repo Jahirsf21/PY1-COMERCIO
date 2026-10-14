@@ -7,16 +7,16 @@ export function cn(...inputs: ClassValue[]) {
 
 /**
  * Formatea un importe con la moneda indicada y dos decimales.
- * 
- * @param {number} value Importe que se mostrará.
- * @param {string} currency Código de moneda del importe
- * @returns {string} Importe formateado con su símbolo de moneda y dos decimales.
+ * @param amount Importe que se mostrará.
+ * @param currency Código de moneda del importe.
+ * @returns Importe formateado con su símbolo de moneda y dos decimales.
+ * @throws Si el código de moneda no tiene un formato admitido por Intl.NumberFormat.
  */
-export function format_price(value: number, currency: string): string {
+export function format_price(amount: number, currency: string): string {
   return new Intl.NumberFormat("es-CR", {
     style: "currency",
     currency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(value)
+  }).format(amount)
 }

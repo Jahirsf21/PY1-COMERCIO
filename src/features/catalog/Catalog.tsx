@@ -1,5 +1,5 @@
 import { InstantSearch } from "react-instantsearch"
-import { algolia_indices, searchClient } from "@/lib/algolia/algolia"
+import { algolia_indices, search_client } from "@/lib/algolia/algolia"
 import { SearchBar } from "@/features/catalog/components/search/SearchBar"
 import { FilterPanel } from "@/features/catalog/components/filters/FilterPanel"
 import { ResultsPanel } from "@/features/catalog/components/results/ResultsPanel"
@@ -10,7 +10,7 @@ export default function Catalog() {
   return (
     <InstantSearch
       indexName={algolia_indices.main}
-      searchClient={searchClient}
+      searchClient={search_client}
       routing
     >
       <div className="flex h-dvh flex-col">

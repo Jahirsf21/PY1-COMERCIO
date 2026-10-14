@@ -2,6 +2,7 @@ import { Link } from "react-router-dom"
 import { CartQuantityStepper } from "@/features/cart/components/CartQuantityStepper"
 import { RemoveCartItemDialog } from "@/features/cart/components/RemoveCartItemDialog"
 import { get_item_subtotal } from "@/lib/cart/cart"
+import { useCart } from "@/lib/cart/cartContext"
 import type { CartItem } from "@/lib/cart/types"
 import { format_price } from "@/lib/shared/utils"
 
@@ -14,6 +15,10 @@ type CartItemCardProps = {
  * Se adapta al ancho disponible para reutilizarla en el carrito y en el checkout.
  */
 export function CartItemCard({ item }: CartItemCardProps) {
+  const { item_validation } = useCart()
+  const validation = item_validation[item.id]
+  const confirmed = validation?.status === "valid"
+  const priceConfirmed = confirmed || validation?.status === "invalid_quantity" || (validation?.status === "unavailable" && validation.limits !== null)
   return (
     <li className="@container min-w-0 rounded-xl border border-input bg-card p-4">
       <div className="grid gap-4 @sm:grid-cols-[96px_minmax(0,1fr)]">
@@ -33,7 +38,7 @@ export function CartItemCard({ item }: CartItemCardProps) {
         <dl className="grid gap-4 border-t border-input pt-4 @min-[260px]:grid-cols-2 @sm:col-span-2 @lg:grid-cols-3">
           <div className="min-w-0">
             <dt className="text-xs text-muted-foreground">Precio unitario</dt>
-            <dd className="mt-1 break-words text-sm font-medium">{format_price(item.unit_price, item.currency)}</dd>
+            <dd className="mt-1 break-words text-sm font-medium">{priceConfirmed ? format_price(item.unit_price, item.currency) : "—"}</dd>
           </div>
           <div className="min-w-0">
             <dt className="text-xs text-muted-foreground">Cantidad</dt>
@@ -43,7 +48,7 @@ export function CartItemCard({ item }: CartItemCardProps) {
           </div>
           <div className="min-w-0 @min-[260px]:col-span-2 @lg:col-span-1">
             <dt className="text-xs text-muted-foreground">Subtotal</dt>
-            <dd className="mt-1 break-words font-semibold">{format_price(get_item_subtotal(item), item.currency)}</dd>
+            <dd className="mt-1 break-words font-semibold">{confirmed ? format_price(get_item_subtotal(item), item.currency) : "—"}</dd>
           </div>
         </dl>
       </div>
