@@ -1,6 +1,6 @@
 import { useRef, useState } from "react"
 import { Link } from "react-router-dom"
-import { ArrowLeftIcon, ShoppingCartIcon } from "lucide-react"
+import { ShoppingCartIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import { ShopHeader } from "@/components/shop-header"
@@ -40,15 +40,6 @@ export default function CartPage() {
     <div className="min-h-dvh bg-background">
       <ShopHeader sticky />
       <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-6">
-        {cart.length > 0 && (
-          <Link
-            to="/"
-            className="mb-5 inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <ArrowLeftIcon aria-hidden="true" className="size-4" />
-            Volver al catálogo
-          </Link>
-        )}
         <div className="mb-6">
           <h1 className="text-2xl font-semibold">Tu carrito</h1>
           <p className="mt-1 text-sm text-muted-foreground">

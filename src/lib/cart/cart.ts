@@ -1,6 +1,8 @@
 import type { CartProduct, CartItem, CartAction, CartQuantityLimits, CartStorageSnapshot, CartValidationResult, CartPagination } from "@/lib/cart/types"
 import type { ProductHit, ProductRecord } from "@/lib/catalog/types"
 import { algolia_indices, search_client } from "@/lib/algolia/algolia"
+import { get_suggestions } from "@/lib/shared/suggestions"
+import { get_product_quantity_limits } from "@/lib/shared/utils"
 
 type QuantityProduct = Pick<CartProduct, "b2c_min_order_quantity" | "b2c_max_order_quantity" | "b2c_step_quantity">
 
@@ -234,13 +236,7 @@ export function refresh_cart_items(state: CartItem[], validation_results: CartVa
  * @returns Límites ajustados al stock y al paso, o null si los datos son inválidos.
  */
 export function get_cart_quantity_limits(product: QuantityProduct, available_quantity: number): CartQuantityLimits | null {
-  const { b2c_min_order_quantity: min_quantity, b2c_max_order_quantity, b2c_step_quantity: step_quantity } = product
-  if (![min_quantity, b2c_max_order_quantity, step_quantity].every((rule_quantity) => Number.isSafeInteger(rule_quantity) && rule_quantity > 0)) return null
-  if (b2c_max_order_quantity < min_quantity || !Number.isSafeInteger(available_quantity) || available_quantity < 0) return null
-
-  const quantity_cap = Math.min(b2c_max_order_quantity, available_quantity)
-  const max_quantity = quantity_cap < min_quantity ? 0 : min_quantity + Math.floor((quantity_cap - min_quantity) / step_quantity) * step_quantity
-  return { min_quantity, max_quantity, step_quantity }
+  return get_product_quantity_limits(product, available_quantity)
 }
 
 /**
@@ -431,57 +427,7 @@ export function get_cart_pagination(cart: CartItem[], requested_page = 1): CartP
 }
 
 /**
- * Obtiene las categorías que se pueden utilizar para sugerir productos del carrito.
- * Elimina espacios externos y duplicados, sin distinguir mayúsculas y minúsculas.
- * Excluye Hombre, Mujer y Unisex como criterios de coincidencia, no los productos que contienen esas categorías.
- * @param category_names Categorías recuperadas desde el catálogo.
- * @returns Categorías sin duplicados y sin las categorías de género excluidas.
- */
-export function get_cart_suggestion_categories(category_names: string[]): string[] {
-  const excluded_categories = new Set(["hombre", "mujer", "unisex"])
-  const categories_by_name = new Map<string, string>()
-
-  for (const category_name of category_names) {
-    if (!is_nonempty_string(category_name)) continue
-    const trimmed_category = category_name.trim()
-    const category_key = trimmed_category.toLocaleLowerCase("es")
-    if (!excluded_categories.has(category_key) && !categories_by_name.has(category_key)) {
-      categories_by_name.set(category_key, trimmed_category)
-    }
-  }
-  return [...categories_by_name.values()]
-}
-
-/**
- * Comprueba que una sugerencia se venda en B2C y tenga una talla con stock suficiente.
- * Suma las unidades de cada talla entre los locales, descontando las reservas.
- * Rechaza inventarios inconsistentes y respeta el mínimo, máximo y paso de compra.
- * @param product Variante candidata a mostrarse como sugerencia.
- * @returns true si al menos una talla permite realizar una compra con sus reglas actuales.
- */
-function is_cart_suggestion_available(product: ProductHit): boolean {
-  if (!Array.isArray(product.sales_channels) || !product.sales_channels.includes("b2c") ||
-    !Array.isArray(product.b2c_stock_by_location)) return false
-  const available_by_size = new Map<string, number>()
-
-  for (const location of product.b2c_stock_by_location) {
-    if (!location || !is_record(location.sizes)) return false
-    for (const [size, size_stock] of Object.entries(location.sizes)) {
-      if (!size_stock || !Number.isSafeInteger(size_stock.stock_quantity) || !Number.isSafeInteger(size_stock.reserved_quantity) ||
-        size_stock.stock_quantity < 0 || size_stock.reserved_quantity < 0 || size_stock.reserved_quantity > size_stock.stock_quantity) return false
-      const available_quantity = size_stock.stock_quantity - size_stock.reserved_quantity
-      available_by_size.set(size, (available_by_size.get(size) ?? 0) + available_quantity)
-    }
-  }
-
-  return [...available_by_size.values()].some((available_quantity) => {
-    const limits = get_cart_quantity_limits(product, available_quantity)
-    return limits !== null && limits.max_quantity >= limits.min_quantity
-  })
-}
-
-/**
- * Consulta hasta 4 productos sugeridos a partir de las categorías de todo el carrito.
+ * Consulta hasta 20 productos sugeridos a partir de las categorías de todo el carrito.
  * Obtiene las categorías actuales mediante facetas de Algolia, sin guardarlas en localStorage.
  * Por cada consulta de sugerencias:
  * - Busca coincidencias en cualquiera de las categorías permitidas.
@@ -490,13 +436,12 @@ function is_cart_suggestion_available(product: ProductHit): boolean {
  * Recorre los resultados hasta completar las sugerencias o agotar las coincidencias.
  * No modifica la búsqueda activa del catálogo ni los productos del carrito.
  * @param product_ids Identificadores de todos los productos presentes en el carrito.
- * @returns Hasta 4 variantes sugeridas; un arreglo vacío si no hay categorías permitidas o productos disponibles.
+ * @returns Hasta 20 variantes sugeridas; un arreglo vacío si no hay categorías permitidas o productos disponibles.
  * @throws Si falla una consulta a Algolia o su respuesta no contiene resultados válidos.
  */
 export async function get_cart_suggestions(product_ids: string[]): Promise<ProductHit[]> {
   const cart_product_ids = [...new Set(product_ids.filter(is_nonempty_string).map((product_id) => product_id.trim()))]
   if (cart_product_ids.length === 0) return []
-
   const cart_product_filters = cart_product_ids.map((product_id) => `product_id:${JSON.stringify(product_id)}`)
   const { data: { results: category_results } } = await search_client.searchWithHTTPInfo<ProductRecord>({
     requests: [{
@@ -512,47 +457,8 @@ export async function get_cart_suggestions(product_ids: string[]): Promise<Produ
   const category_result = category_results[0]
   if (!category_result || !("hits" in category_result) || !Array.isArray(category_result.hits)) throw new Error("Respuesta de categorías inválida.")
 
-  const categories = get_cart_suggestion_categories(Object.keys(category_result.facets?.categories ?? {}))
-  if (categories.length === 0) return []
-  const category_filters = categories.map((category_name) => `categories:${JSON.stringify(category_name)}`)
-  const excluded_product_filters = cart_product_filters.map((product_filter) => `NOT ${product_filter}`)
-  const suggestion_filters = `(${category_filters.join(" OR ")}) AND ${excluded_product_filters.join(" AND ")}`
-  const matching_categories = new Set(categories.map((category_name) => category_name.toLocaleLowerCase("es")))
-  const excluded_product_ids = new Set(cart_product_ids)
-  const suggested_product_ids = new Set<string>()
-  const suggested_products: ProductHit[] = []
-  const suggestion_limit = 4
-  let current_page = 0
-  let total_pages = 1
-
-  while (current_page < total_pages && suggested_products.length < suggestion_limit) {
-    const { data: { results: suggestion_results } } = await search_client.searchWithHTTPInfo<ProductRecord>({
-      requests: [{
-        indexName: algolia_indices.main,
-        query: "",
-        filters: suggestion_filters,
-        attributesToHighlight: ["title"],
-        hitsPerPage: 20,
-        page: current_page,
-        distinct: false,
-      }],
-    })
-    const suggestion_result = suggestion_results[0]
-    if (!suggestion_result || !("hits" in suggestion_result) || !Array.isArray(suggestion_result.hits) || typeof suggestion_result.nbPages !== "number" || !Number.isSafeInteger(suggestion_result.nbPages) || suggestion_result.nbPages < 0) throw new Error("Respuesta de sugerencias inválida.")
-    total_pages = suggestion_result.nbPages
-    current_page += 1
-
-    for (const product of suggestion_result.hits as ProductHit[]) {
-      if (!product || !is_nonempty_string(product.product_id) || !Array.isArray(product.categories) ||
-        excluded_product_ids.has(product.product_id) || suggested_product_ids.has(product.product_id)) continue
-      const has_matching_category = get_cart_suggestion_categories(product.categories).some((category_name) => matching_categories.has(category_name.toLocaleLowerCase("es")))
-      if (!has_matching_category || !is_cart_suggestion_available(product)) continue
-      suggested_product_ids.add(product.product_id)
-      suggested_products.push(product)
-      if (suggested_products.length === suggestion_limit) break
-    }
-  }
-  return suggested_products
+  const categories = Object.keys(category_result.facets?.categories ?? {})
+  return get_suggestions(categories, cart_product_ids)
 }
 
 /**

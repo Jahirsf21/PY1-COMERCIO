@@ -2,6 +2,7 @@ import { algolia_indices, search_client } from "@/lib/algolia/algolia"
 import { get_cart_quantity_limits, get_cart_validation_error, validate_cart_item } from "@/lib/cart/cart"
 import type { CartItem, CartQuantityLimits, CartValidationResult } from "@/lib/cart/types"
 import type { ProductHit, ProductRecord, StockByLocation } from "@/lib/catalog/types"
+import { get_suggestions } from "@/lib/shared/suggestions"
 
 /**
  * Obtiene las variantes de un producto desde el índice principal de Algolia.
@@ -14,7 +15,6 @@ import type { ProductHit, ProductRecord, StockByLocation } from "@/lib/catalog/t
 export async function get_product_variants(product_id: string): Promise<ProductHit[]> {
   if (!product_id) return []
   const product_id_filter_value = product_id.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
-
   const { data: { results } } = await search_client.searchWithHTTPInfo<ProductRecord>({
     requests: [{
       indexName: algolia_indices.main,
@@ -24,10 +24,27 @@ export async function get_product_variants(product_id: string): Promise<ProductH
       hitsPerPage: 50,
     }],
   })
-
   const search_result = results[0]
   if (!search_result || !("hits" in search_result) || !Array.isArray(search_result.hits)) throw new Error("Respuesta de catálogo inválida.")
   return search_result.hits as ProductHit[]
+}
+
+/**
+ * Consulta hasta 20 productos sugeridos con alguna categoría compartida, sin filtrar por marca.
+ * Excluye Hombre, Mujer, Unix y Unisex como criterios, sin descartar productos por su género.
+ * Por cada consulta de sugerencias:
+ * - Excluye el product_id actual y evita repetir colores del mismo producto.
+ * - Conserva únicamente variantes B2C con al menos una talla disponible para comprar.
+ * - Reutiliza la consulta, normalización y disponibilidad compartidas con las sugerencias del carrito.
+ * Recorre los resultados hasta completar las sugerencias o agotar las coincidencias.
+ * No modifica la búsqueda activa del catálogo ni la selección del detalle.
+ * @param product Identificador y categorías del producto mostrado en el detalle.
+ * @returns Hasta 20 variantes sugeridas; un arreglo vacío si faltan criterios o productos disponibles.
+ * @throws Si falla la consulta a Algolia o su respuesta no contiene resultados válidos.
+ */
+export async function get_product_suggestions(product: Pick<ProductRecord, "product_id" | "categories">): Promise<ProductHit[]> {
+  if (typeof product.product_id !== "string" || !product.product_id.trim() || !Array.isArray(product.categories)) return []
+  return get_suggestions(product.categories, [product.product_id.trim()])
 }
 
 /**
@@ -84,7 +101,6 @@ export async function get_cart_validation(cart: CartItem[]): Promise<CartValidat
   const product_ids = [...new Set(cart.map((item) => item.product_id))]
   const variant_responses = await Promise.allSettled(product_ids.map((product_id) => get_product_variants(product_id)))
   const responses_by_product_id = new Map(product_ids.map((product_id, response_index) => [product_id, variant_responses[response_index]]))
-
   return cart.map((item) => {
     const variant_response = responses_by_product_id.get(item.product_id)
     if (!variant_response || variant_response.status === "rejected") return get_cart_validation_error(item)
@@ -97,8 +113,7 @@ export async function get_cart_validation(cart: CartItem[]): Promise<CartValidat
       for (const location of variant.b2c_stock_by_location) {
         if (!location || !location.sizes || typeof location.sizes !== "object" || Array.isArray(location.sizes)) return get_cart_validation_error(item)
         const size_stock = location.sizes[item.selected_size]
-        if (size_stock !== undefined && (!size_stock || !Number.isSafeInteger(size_stock.stock_quantity) || !Number.isSafeInteger(size_stock.reserved_quantity) ||
-          size_stock.stock_quantity < 0 || size_stock.reserved_quantity < 0 || size_stock.reserved_quantity > size_stock.stock_quantity)) return get_cart_validation_error(item)
+        if (size_stock !== undefined && (!size_stock || !Number.isSafeInteger(size_stock.stock_quantity) || !Number.isSafeInteger(size_stock.reserved_quantity) || size_stock.stock_quantity < 0 || size_stock.reserved_quantity < 0 || size_stock.reserved_quantity > size_stock.stock_quantity)) return get_cart_validation_error(item)
       }
       return validate_cart_item(item, variant, get_available_quantity_by_size(variant.b2c_stock_by_location, item.selected_size))
     } catch {

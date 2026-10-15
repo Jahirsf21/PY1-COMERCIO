@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react"
-import { Link, useParams, useSearchParams } from "react-router-dom"
-import { ArrowLeftIcon, CheckIcon, MapPinIcon, PackageCheckIcon, StarIcon } from "lucide-react"
+import { useEffect, useLayoutEffect, useState } from "react"
+import { useParams, useSearchParams } from "react-router-dom"
+import { CheckIcon, MapPinIcon, PackageCheckIcon, StarIcon } from "lucide-react"
 import { cn } from "cn"
 import type { VariantsResult } from "@/lib/catalog/types"
 import { get_available_quantity_by_size, get_product_variants, get_sizes_from_stock } from "@/lib/catalog/catalog"
 import { get_cart_quantity_limits } from "@/lib/cart/cart"
 import { AddToCartForm } from "@/features/product-detail/AddToCartForm"
+import { ProductSuggestions } from "@/features/product-detail/ProductSuggestions"
 import { ShopHeader } from "@/components/shop-header"
 import { format_price } from "@/lib/shared/utils"
 
@@ -39,6 +40,10 @@ export default function ProductDetailPage() {
     sku: null,
     imageIndex: 0,
   });
+
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [productId]);
 
   useEffect(() => {
     let active = true;
@@ -88,12 +93,6 @@ export default function ProductDetailPage() {
           <p className="mt-3 text-muted-foreground">
             No pudimos cargar este producto. Intenta de nuevo.
           </p>
-          <Link
-            to="/"
-            className="mt-6 rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/80"
-          >
-            Volver al catálogo
-          </Link>
         </main>
       </div>
     );
@@ -124,14 +123,6 @@ export default function ProductDetailPage() {
     <div className="min-h-dvh bg-background">
       <ShopHeader sticky />
       <main className="mx-auto w-full max-w-[1440px] px-4 py-5 lg:px-8 lg:py-8">
-        <Link
-          to="/"
-          className="mb-5 inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <ArrowLeftIcon aria-hidden="true" className="size-4" />
-          Volver al catálogo
-        </Link>
-
         <div className="grid grid-cols-[4.5rem_minmax(0,1fr)] items-start gap-3 lg:grid-cols-[5.5rem_minmax(0,1fr)_minmax(320px,380px)] lg:gap-6 xl:grid-cols-[6rem_minmax(0,640px)_400px] xl:justify-center">
           <section aria-label="Imágenes del producto" className="contents">
             <div className="flex max-h-[75vw] flex-col gap-2 overflow-y-auto pr-1 lg:max-h-[calc(100vh-9rem)]">
@@ -363,6 +354,7 @@ export default function ProductDetailPage() {
             </div>
           )}
         </section>
+        <ProductSuggestions product={selectedVariant} />
       </main>
     </div>
   );
