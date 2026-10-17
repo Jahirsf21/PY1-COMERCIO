@@ -120,6 +120,7 @@ export function validate_card_payment_data(card_data: CardPaymentData): Partial<
  * - El estado de la pasarela de pago de la tarjeta.
  * - La fecha de vencimiento, el vencimiento de la tarjeta y el CVV.
  * - La moneda y el saldo disponible frente al total de la orden.
+ * Si falla alguna comprobación de los datos, el registro, el vencimiento, el CVV o la moneda, devuelve el mismo mensaje de información inválida.
  * @param card_data Datos de la tarjeta.
  * @param order Total y moneda de la orden.
  * @returns Resultado del pago.
@@ -128,16 +129,15 @@ export function validate_card_payment_data(card_data: CardPaymentData): Partial<
  */
 export async function process_payment(card_data: CardPaymentData, order: Pick<Order, "total" | "currency">): Promise<PaymentResult> {
   await new Promise((resolve) => setTimeout(resolve, 1500))
-  if (Object.keys(validate_card_payment_data(card_data)).length > 0) {
-    return { status: "DECLINED", message: "Los datos de la tarjeta no son válidos." }
-  }
+  const invalid_card_result: PaymentResult = { status: "DECLINED", message: "La información de la tarjeta no es válida." }
+  if (Object.keys(validate_card_payment_data(card_data)).length > 0) return invalid_card_result
   const card = mock_cards.find((mock_card) => mock_card.card_number === normalize_card_number(card_data.card_number))
-  if (!card) return { status: "DECLINED", message: "La tarjeta no está registrada en el sandbox de pagos." }
+  if (!card) return invalid_card_result
   if (card.gateway_status === "ERROR") return { status: "ERROR", message: "La pasarela de pago no respondió. Intenta nuevamente." }
-  if (card.expiration_date !== card_data.expiration_date.trim()) return { status: "DECLINED", message: "La fecha de vencimiento no coincide con la tarjeta." }
-  if (is_card_expired(card.expiration_date)) return { status: "DECLINED", message: "La tarjeta está vencida." }
-  if (card.cvv !== card_data.cvv.trim()) return { status: "DECLINED", message: "El CVV es incorrecto." }
-  if (card.currency !== order.currency) return { status: "DECLINED", message: `La tarjeta no admite pagos en ${order.currency}.` }
+  if (card.expiration_date !== card_data.expiration_date.trim() || is_card_expired(card.expiration_date) ||
+    card.cvv !== card_data.cvv.trim() || card.currency !== order.currency) {
+    return invalid_card_result
+  }
   if (card.balance < order.total) return { status: "DECLINED", message: "Fondos insuficientes para completar el pago." }
   return { status: "APPROVE", message: "Pago aprobado." }
 }
