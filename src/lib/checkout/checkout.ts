@@ -39,11 +39,11 @@ export function create_checkout_form_data(): CheckoutFormData {
 }
 
 /**
- * Recupera explícitamente los campos del comprador y la entrega desde los datos guardados.
- * Conserva los valores iniciales cuando un campo está ausente o tiene un tipo incorrecto.
- * Aplica los límites de identificación, teléfonos y código postal.
- * @param stored_data Datos recuperados del navegador cuyo tipo y estructura todavía no se han comprobado.
- * @returns Información del comprador y la entrega con los campos válidos y los valores iniciales para los demás.
+ * Valida campo por campo los datos guardados del formulario de compra.
+ * Usa los valores iniciales para los campos ausentes o con un tipo incorrecto.
+ * Conserva solo los dígitos de la identificación, los teléfonos y el código postal, y limita su longitud.
+ * @param stored_data Datos guardados sin validar.
+ * @returns Datos del formulario validados.
  */
 function parse_checkout_form_data(stored_data: unknown): CheckoutFormData {
   const form_data = create_checkout_form_data()
@@ -109,8 +109,8 @@ function parse_checkout_form_data(stored_data: unknown): CheckoutFormData {
 }
 
 /**
- * Recupera los datos del formulario almacenados en el navegador.
- * @returns Datos validados mediante parse_checkout_form_data(), o valores iniciales si el almacenamiento no está disponible o contiene un JSON inválido.
+ * Obtiene los datos del formulario guardados en localStorage y los valida mediante parse_checkout_form_data().
+ * @returns Datos del formulario, o los valores iniciales si no se pueden leer o el JSON es inválido.
  */
 export function get_stored_checkout_form_data(): CheckoutFormData {
   try {
@@ -121,9 +121,8 @@ export function get_stored_checkout_form_data(): CheckoutFormData {
 }
 
 /**
- * Guarda los datos del formulario sin almacenar los errores ni el estado de las consultas.
- * Permite continuar cuando el navegador bloquea el almacenamiento o no tiene espacio disponible.
- * @param form_data Información del comprador y la entrega que se desea conservar.
+ * Guarda los datos del formulario de compra en localStorage.
+ * @param form_data Información del comprador y la entrega.
  * @returns No retorna ningún valor.
  */
 export function save_checkout_form_data(form_data: CheckoutFormData): void {
@@ -135,8 +134,7 @@ export function save_checkout_form_data(form_data: CheckoutFormData): void {
 }
 
 /**
- * Elimina los datos del formulario guardados en el navegador.
- * Permite continuar si el navegador bloquea el almacenamiento.
+ * Elimina los datos del formulario guardados en localStorage.
  * @returns No retorna ningún valor.
  */
 export function clear_stored_checkout_form_data(): void {
@@ -148,19 +146,17 @@ export function clear_stored_checkout_form_data(): void {
 }
 
 /**
- * Obtiene las provincias disponibles en el catálogo de entrega.
- * Ordena los nombres alfabéticamente según las reglas del español.
- * @returns Lista de provincias ordenadas alfabéticamente.
+ * Obtiene las provincias del catálogo de entrega ordenadas alfabéticamente.
+ * @returns Provincias ordenadas.
  */
 export function get_delivery_provinces(): string[] {
   return Object.keys(delivery_locations).sort((first_name, second_name) => first_name.localeCompare(second_name, "es"))
 }
 
 /**
- * Obtiene los cantones de una provincia del catálogo de entrega.
- * Comprueba que la provincia exista y ordena los nombres según las reglas del español.
- * @param province Provincia seleccionada por la persona compradora.
- * @returns Lista de cantones ordenados alfabéticamente; un arreglo vacío si la provincia no existe.
+ * Obtiene los cantones de una provincia ordenados alfabéticamente.
+ * @param province Provincia seleccionada.
+ * @returns Cantones ordenados; vacío si la provincia no existe.
  */
 export function get_delivery_cantons(province: string): string[] {
   const cantons = Object.hasOwn(delivery_locations, province) ? delivery_locations[province] : {}
@@ -168,11 +164,10 @@ export function get_delivery_cantons(province: string): string[] {
 }
 
 /**
- * Obtiene los distritos de un cantón dentro de la provincia seleccionada.
- * Comprueba que el cantón pertenezca a la provincia y ordena una copia de los nombres según las reglas del español.
- * @param province Provincia seleccionada por la persona compradora.
- * @param canton Cantón seleccionado dentro de la provincia.
- * @returns Lista de distritos ordenados alfabéticamente; un arreglo vacío si la provincia o el cantón no existen.
+ * Obtiene los distritos de un cantón ordenados alfabéticamente.
+ * @param province Provincia seleccionada.
+ * @param canton Cantón seleccionado.
+ * @returns Distritos ordenados; vacío si la provincia o el cantón no existen.
  */
 export function get_delivery_districts(province: string, canton: string): string[] {
   if (!get_delivery_cantons(province).includes(canton)) return []
@@ -180,13 +175,10 @@ export function get_delivery_districts(province: string, canton: string): string
 }
 
 /**
- * Valida cada campo de identificación y contacto de la persona compradora.
- * El nombre, el tipo y número de identificación, el correo y el teléfono principales son obligatorios.
- * Los contactos alternativos son opcionales y solo se rechazan cuando contienen un valor inválido.
- * @param buyer Información de la persona compradora que se desea validar.
- * @returns Errores de validación por campo.
- *   Cada propiedad corresponde a un campo inválido de buyer y contiene su mensaje de error.
- *   Los campos válidos no se incluyen; retorna un objeto vacío si todos son válidos.
+ * Valida los campos de identificación y contacto de la persona compradora.
+ * El nombre, el tipo y número de identificación, el correo y el teléfono son obligatorios; los contactos alternativos son opcionales.
+ * @param buyer Información de la persona compradora.
+ * @returns Mensaje de error por cada campo inválido; vacío si todos los campos son válidos.
  */
 export function validate_buyer_fields(buyer: BuyerInfo): Partial<Record<keyof BuyerInfo, string>> {
   const field_validations = {
@@ -206,14 +198,13 @@ export function validate_buyer_fields(buyer: BuyerInfo): Partial<Record<keyof Bu
 }
 
 /**
- * Valida el formato de un código postal y el rango de la provincia seleccionada.
- * Exige 5 dígitos, una provincia del 1 al 7 y códigos de cantón y distrito distintos de 00.
- * Comprueba el rango únicamente cuando la provincia existe en el catálogo de rangos.
- * No verifica la correspondencia con un cantón o distrito concreto porque el catálogo de ubicaciones no incluye sus códigos.
- * @param postal_code Código postal ingresado por la persona compradora.
- * @param province Provincia seleccionada para la entrega.
+ * Valida el formato de un código postal y su rango según la provincia.
+ * Exige 5 dígitos, un primer dígito del 1 al 7 y códigos de cantón y distrito distintos de 00.
+ * Comprueba el rango solo si la provincia está en delivery_postal_code_ranges.
+ * @param postal_code Código postal ingresado.
+ * @param province Provincia seleccionada.
  * @returns Resultado de la validación.
- *   valid: true si el código cumple el formato y el rango de la provincia cuando está disponible.
+ *   valid: true si el código cumple el formato y el rango de la provincia.
  *   error: primer requisito incumplido, cuando valid es false.
  */
 export function validate_delivery_postal_code(postal_code: string, province: string): { valid: boolean; error?: string } {
@@ -241,13 +232,10 @@ export function validate_delivery_postal_code(postal_code: string, province: str
 }
 
 /**
- * Valida la dirección de entrega y la relación entre provincia, cantón y distrito.
- * Admite únicamente Costa Rica y ubicaciones presentes en el catálogo de entrega.
- * Requiere una dirección y un código postal de 5 dígitos dentro del rango de la provincia; las indicaciones adicionales son opcionales.
- * @param delivery Dirección de entrega que se desea validar.
- * @returns Errores de validación por campo.
- *   Cada propiedad corresponde a un campo inválido de delivery y contiene su mensaje de error.
- *   Los campos válidos no se incluyen; retorna un objeto vacío si todos son válidos.
+ * Valida los campos de la dirección de entrega.
+ * Exige Costa Rica como país, una provincia, un cantón y un distrito del catálogo de entrega, una dirección y un código postal válido; las indicaciones adicionales son opcionales.
+ * @param delivery Dirección de entrega.
+ * @returns Mensaje de error por cada campo inválido; vacío si todos los campos son válidos.
  */
 export function validate_delivery_fields(delivery: DeliveryInfo): Partial<Record<keyof DeliveryInfo, string>> {
   const errors: Partial<Record<keyof DeliveryInfo, string>> = {}

@@ -3,15 +3,14 @@ import type { ProductHit, ProductRecord } from "@/lib/catalog/types"
 import { get_suggestion_categories, is_product_suggestion_available } from "@/lib/shared/utils"
 
 /**
- * Consulta hasta 20 productos sugeridos con la lógica compartida de carrito y detalle.
- * Busca coincidencias en cualquiera de las categorías permitidas, sin filtrar por marca.
- * Excluye los product_id recibidos y evita repetir colores del mismo producto.
- * Conserva únicamente variantes B2C con al menos una talla disponible para comprar.
- * Recorre los resultados hasta completar las sugerencias o agotar las coincidencias.
- * No modifica la búsqueda activa del catálogo ni las selecciones de compra.
- * @param category_names Categorías de los productos que originan las sugerencias.
- * @param product_ids Identificadores de los productos que no deben aparecer como sugerencias.
- * @returns Hasta 20 variantes sugeridas; un arreglo vacío si no hay categorías permitidas o productos disponibles.
+ * Consulta hasta 20 productos sugeridos que comparten alguna categoría con los productos recibidos.
+ * Por cada página de resultados de Algolia:
+ * - Excluye los product_id recibidos y los colores repetidos de un mismo producto.
+ * - Conserva las variantes disponibles según is_product_suggestion_available().
+ * Recorre las páginas hasta completar 20 sugerencias o agotar los resultados.
+ * @param category_names Categorías de los productos de origen.
+ * @param product_ids Identificadores de los productos que se excluyen.
+ * @returns Hasta 20 variantes sugeridas; vacío si no hay categorías válidas o productos disponibles.
  * @throws Si falla una consulta a Algolia o su respuesta no contiene resultados válidos.
  */
 export async function get_suggestions(category_names: string[], product_ids: string[]): Promise<ProductHit[]> {

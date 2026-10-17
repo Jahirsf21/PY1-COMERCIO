@@ -5,11 +5,9 @@ import type { ProductHit, ProductRecord, StockByLocation } from "@/lib/catalog/t
 import { get_suggestions } from "@/lib/shared/suggestions"
 
 /**
- * Obtiene las variantes de un producto desde el índice principal de Algolia.
- * Escapa el product_id para usarlo en el filtro y omite la caché del cliente.
- * No modifica la búsqueda activa del catálogo.
- * @param product_id Identificador del producto cuyas variantes se consultan.
- * @returns Arreglo de variantes con sus tallas y stock por local; vacío si no se proporciona un product_id o no hay coincidencias.
+ * Obtiene las variantes de un producto desde el índice principal de Algolia, sin usar la caché del cliente.
+ * @param product_id Identificador del producto.
+ * @returns Variantes del producto; vacío si no hay product_id o coincidencias.
  * @throws Si falla la consulta o la respuesta no contiene un arreglo de hits.
  */
 export async function get_product_variants(product_id: string): Promise<ProductHit[]> {
@@ -30,16 +28,10 @@ export async function get_product_variants(product_id: string): Promise<ProductH
 }
 
 /**
- * Consulta hasta 20 productos sugeridos con alguna categoría compartida, sin filtrar por marca.
- * Excluye Hombre, Mujer, Unix y Unisex como criterios, sin descartar productos por su género.
- * Por cada consulta de sugerencias:
- * - Excluye el product_id actual y evita repetir colores del mismo producto.
- * - Conserva únicamente variantes B2C con al menos una talla disponible para comprar.
- * - Reutiliza la consulta, normalización y disponibilidad compartidas con las sugerencias del carrito.
- * Recorre los resultados hasta completar las sugerencias o agotar las coincidencias.
- * No modifica la búsqueda activa del catálogo ni la selección del detalle.
- * @param product Identificador y categorías del producto mostrado en el detalle.
- * @returns Hasta 20 variantes sugeridas; un arreglo vacío si faltan criterios o productos disponibles.
+ * Consulta hasta 20 productos sugeridos que comparten alguna categoría con el producto mediante get_suggestions().
+ * Excluye el producto actual de las sugerencias.
+ * @param product Identificador y categorías del producto.
+ * @returns Hasta 20 variantes sugeridas; vacío si no hay categorías válidas o productos disponibles.
  * @throws Si falla la consulta a Algolia o su respuesta no contiene resultados válidos.
  */
 export async function get_product_suggestions(product: Pick<ProductRecord, "product_id" | "categories">): Promise<ProductHit[]> {
@@ -48,19 +40,19 @@ export async function get_product_suggestions(product: Pick<ProductRecord, "prod
 }
 
 /**
- * Combina las tallas registradas en los locales indicados y elimina duplicados.
- * @param stock_by_location Arreglo de locales con stock por talla dentro de sizes.
- * @returns Lista de tallas sin duplicados; vacía si no hay locales o tallas registradas.
+ * Obtiene las tallas registradas en los locales, sin duplicados.
+ * @param stock_by_location Locales con stock por talla.
+ * @returns Tallas sin duplicados; vacío si no hay locales o tallas.
  */
 export function get_sizes_from_stock(stock_by_location: StockByLocation[]): string[] {
   return [...new Set(stock_by_location.flatMap((location) => Object.keys(location.sizes)))]
 }
 
 /**
- * Suma las unidades disponibles de una talla en todos los locales, descontando reservas.
- * @param stock_by_location Arreglo de locales con stock y reservas por talla.
- * @param selected_size Talla de la que se calcula la disponibilidad.
- * @returns Suma de stock_quantity menos reserved_quantity para la talla; cero si no está registrada.
+ * Calcula el stock disponible de una talla sumando todos los locales y descontando las reservas.
+ * @param stock_by_location Locales con stock y reservas por talla.
+ * @param selected_size Talla seleccionada.
+ * @returns Suma de stock_quantity menos reserved_quantity de la talla; cero si no está registrada.
  */
 export function get_available_quantity_by_size(stock_by_location: StockByLocation[], selected_size: string): number {
   return stock_by_location.reduce((available_quantity, location) => {
@@ -70,11 +62,11 @@ export function get_available_quantity_by_size(stock_by_location: StockByLocatio
 }
 
 /**
- * Consulta las reglas y el stock indexados más recientes para una línea SKU+talla.
+ * Consulta los límites de cantidad de una variante y talla con los datos actuales del catálogo.
  * @param product_id Identificador del producto.
- * @param sku Variante seleccionada.
- * @param selected_size Talla cuya disponibilidad se comprueba.
- * @returns Límites vigentes, o null si la variante no está disponible en B2C o sus reglas de cantidad o stock son inválidos.
+ * @param sku SKU de la variante.
+ * @param selected_size Talla seleccionada.
+ * @returns Límites de cantidad, o null si la variante no existe, no se vende en B2C o sus reglas o stock son inválidos.
  * @throws Si falla la consulta de variantes o la respuesta no contiene un arreglo de hits.
  */
 export async function get_catalog_quantity_limits(product_id: string, sku: string, selected_size: string): Promise<CartQuantityLimits | null> {
@@ -85,17 +77,17 @@ export async function get_catalog_quantity_limits(product_id: string, sku: strin
 }
 
 /**
- * Consulta y valida los productos del carrito con los datos actuales del catálogo.
+ * Valida las líneas del carrito con los datos actuales del catálogo.
  * Por cada producto:
- * - Consulta sus variantes una vez y reutiliza la respuesta para sus tallas.
- * - Comprueba el canal B2C y el stock y las reservas de la talla seleccionada.
- * - Valida el precio, el descuento y las reglas de cantidad con validate_cart_item().
- * Si una consulta falla, marca sus líneas con error sin borrar productos ni afectar las demás consultas.
- * @param cart Selecciones que requieren renovar sus precios y disponibilidad.
- * @returns Resultado independiente para cada línea, incluso ante fallos parciales.
- *   original_item: referencia de la línea consultada.
- *   item: línea con los datos renovados cuando se pueden comprobar.
- *   status / limits / message: estado, límites y mensaje de validación.
+ * - Consulta sus variantes una sola vez para todas sus líneas.
+ * - Comprueba el stock y las reservas de la talla seleccionada.
+ * - Valida cada línea mediante validate_cart_item().
+ * Si falla la consulta de un producto o su stock es inconsistente, marca sus líneas con get_cart_validation_error().
+ * @param cart Líneas del carrito.
+ * @returns Resultado de validación de cada línea.
+ *   original_item: línea recibida.
+ *   item: línea con los datos actualizados.
+ *   status / limits / message: estado, límites y mensaje de la validación.
  */
 export async function get_cart_validation(cart: CartItem[]): Promise<CartValidationResult[]> {
   const product_ids = [...new Set(cart.map((item) => item.product_id))]

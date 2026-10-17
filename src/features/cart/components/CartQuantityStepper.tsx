@@ -10,12 +10,10 @@ type CartQuantityStepperProps = {
 }
 
 /**
- * Permite aumentar o reducir las unidades de una línea del carrito.
- * Respeta el mínimo, el máximo y el paso del producto, consultando su disponibilidad.
- * La eliminación del producto se realiza únicamente mediante el botón "Eliminar".
+ * Muestra los controles para aumentar o reducir la cantidad de una línea del carrito.
  * @param props Propiedades del componente.
- * @param props.item Producto del carrito cuya cantidad se desea modificar.
- * @returns Controles de cantidad con sus mensajes de disponibilidad y estado.
+ * @param props.item Línea del carrito.
+ * @returns Controles de cantidad con sus mensajes de disponibilidad.
  */
 export function CartQuantityStepper({ item }: CartQuantityStepperProps) {
   const id = useId()
@@ -28,10 +26,9 @@ export function CartQuantityStepper({ item }: CartQuantityStepperProps) {
   const currentMessage = validation?.message ?? (!busy && limits && !can_increment_item(item, limits) ? get_cart_add_quantity_message(limits, item.quantity) : null)
 
   /**
-   * Solicita aumentar o reducir la cantidad según el paso del producto.
-   * El proveedor vuelve a consultar las reglas antes de aceptar el cambio.
+   * Aumenta o reduce un paso la cantidad de la línea mediante increment_item() o decrement_item().
    * @param direction Operación que se desea realizar.
-   * @returns Promesa que finaliza al completar la actualización.
+   * @returns Promesa que finaliza al procesar el cambio.
    */
   async function handleChange(direction: "increment" | "decrement"): Promise<void> {
     setUpdating(direction)

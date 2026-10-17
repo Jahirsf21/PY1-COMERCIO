@@ -8,11 +8,10 @@ type CartStatusProps = {
 }
 
 /**
- * Muestra avisos breves de recuperación, almacenamiento y comprobación del carrito.
- * Permite reintentar sin borrar los productos ni repetir avisos en una compra normal.
+ * Muestra los avisos de recuperación, almacenamiento y validación del carrito.
  * @param props Propiedades del componente.
- * @param props.className Estilos adicionales para la página o la vista previa.
- * @returns Avisos del carrito, o null cuando no es necesario mostrar ninguno.
+ * @param props.className Clases adicionales del contenedor.
+ * @returns Avisos del carrito, o null si no hay avisos.
  */
 export function CartStatus({ className }: CartStatusProps) {
   const { cart, storage_error, notice, dismiss_notice, is_validating, can_checkout, revalidate_cart } = useCart()

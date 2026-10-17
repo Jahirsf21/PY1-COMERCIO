@@ -18,15 +18,15 @@ type AddToCartFormProps = {
 }
 
 /**
- * Permite elegir cuántas unidades de la variante y talla se añadirán desde el detalle.
- * Respeta mínimo, máximo y paso sobre la cantidad acumulada de SKU+talla.
+ * Muestra el formulario para elegir la cantidad de una variante y talla y agregarla al carrito.
+ * Valida la cantidad con el mínimo, el máximo y el paso, sumando las unidades que ya están en el carrito.
  * @param props Propiedades del componente.
- * @param props.product Variante del producto que se desea agregar.
+ * @param props.product Variante del producto.
  * @param props.selectedSize Talla seleccionada, o null si no se ha elegido.
- * @param props.availableQuantity Unidades disponibles de la talla seleccionada.
- * @param props.isSubmitting Indica si se está procesando una adición al carrito.
+ * @param props.availableQuantity Stock disponible de la talla seleccionada.
+ * @param props.isSubmitting Indica si se está agregando el producto al carrito.
  * @param props.onSubmittingChange Actualiza el estado de envío.
- * @returns Formulario de cantidad con el subtotal y la acción de agregar al carrito.
+ * @returns Formulario de cantidad con el subtotal y el botón para agregar al carrito.
  */
 export function AddToCartForm({
   product,
@@ -65,8 +65,8 @@ export function AddToCartForm({
   ].filter(Boolean).join(" ") || undefined
 
   /**
-   * Actualiza la cantidad ingresada y descarta el error de la solicitud anterior.
-   * @param nextQuantity Nuevo valor del campo de cantidad.
+   * Actualiza la cantidad ingresada y borra el error anterior.
+   * @param nextQuantity Valor del campo de cantidad.
    * @returns No retorna ningún valor.
    */
   function handleQuantityChange(nextQuantity: string): void {
@@ -75,10 +75,9 @@ export function AddToCartForm({
   }
 
   /**
-   * Agrega toda la cantidad solicitada en una sola acción.
-   * Valida nuevamente las reglas de cantidad y el stock antes de confirmar la adición.
+   * Agrega la cantidad ingresada al carrito mediante add_to_cart() y muestra un aviso si se agregó.
    * @param event Evento de envío del formulario.
-   * @returns Promesa que finaliza al completar la solicitud.
+   * @returns Promesa que finaliza al procesar la adición.
    */
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()

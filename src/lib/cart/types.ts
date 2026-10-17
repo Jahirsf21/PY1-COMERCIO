@@ -1,7 +1,7 @@
 import type { ProductImage, Discount, ProductHit } from "@/lib/catalog/types"
 
 /**
- * Información del producto necesaria para agregarlo al carrito
+ * Datos del producto necesarios para agregarlo al carrito
  */
 export type CartProduct = {
   sku: string
@@ -18,7 +18,7 @@ export type CartProduct = {
 }
 
 /**
- * Producto seleccionado y almacenado dentro del carrito de compras
+ * Línea del carrito con el producto, la talla seleccionada y la cantidad
  */
 export type CartItem = {
   id: string
@@ -33,9 +33,8 @@ export type CartItem = {
 }
 
 /**
- * Límites vigentes de una línea SKU+talla; max_quantity ya contempla el stock
- * y está alineado a la secuencia min_quantity + n * step_quantity.
- * Estos límites se consultan por separado y no se persisten en el carrito.
+ * Límites de cantidad de una línea SKU+talla.
+ * max_quantity contempla el stock y sigue la secuencia min_quantity + n * step_quantity.
  */
 export type CartQuantityLimits = {
   min_quantity: number
@@ -44,8 +43,7 @@ export type CartQuantityLimits = {
 }
 
 /**
- * Productos de una página del carrito y datos para recorrer sus páginas.
- * Cada combinación SKU+talla cuenta como un producto, sin sumar sus unidades.
+ * Líneas de una página del carrito y datos de paginación
  */
 export type CartPagination = {
   page_items: CartItem[]
@@ -55,9 +53,8 @@ export type CartPagination = {
 }
 
 /**
- * Resultado de consultar las sugerencias para un conjunto de productos del carrito.
- * request_key permite descartar resultados que ya no corresponden a la selección actual.
- * Este resultado no se persiste ni interviene en la validación de la compra.
+ * Resultado de consultar las sugerencias del carrito.
+ * request_key identifica la consulta que generó el resultado.
  */
 export type CartSuggestionsResult = {
   request_key: string
@@ -66,8 +63,7 @@ export type CartSuggestionsResult = {
 }
 
 /**
- * Resultado de recuperar el formato histórico del carrito desde el navegador.
- * Los precios recuperados todavía deben comprobarse con el catálogo.
+ * Resultado de recuperar el carrito guardado en el navegador
  */
 export type CartStorageSnapshot = {
   cart: CartItem[]
@@ -76,7 +72,7 @@ export type CartStorageSnapshot = {
 }
 
 /**
- * Estado temporal de comprobación de una línea; nunca se guarda en localStorage.
+ * Estado de validación de una línea del carrito
  */
 export type CartItemValidation = {
   status: "pending" | "valid" | "unavailable" | "invalid_quantity" | "error"
@@ -85,7 +81,7 @@ export type CartItemValidation = {
 }
 
 /**
- * Conserva la referencia consultada para no sobrescribir modificaciones posteriores.
+ * Resultado de validar una línea del carrito con la línea recibida y la línea actualizada
  */
 export type CartValidationResult = CartItemValidation & {
   original_item: CartItem
@@ -93,8 +89,7 @@ export type CartValidationResult = CartItemValidation & {
 }
 
 /**
- * Acciones disponibles para modificar el estado del carrito.
- * Cada cambio de cantidad lleva límites recién consultados.
+ * Acciones disponibles para modificar el carrito
  */
 export type CartAction =
   | {

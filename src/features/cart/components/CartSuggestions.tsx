@@ -6,10 +6,9 @@ import { useCart } from "@/lib/cart/cartContext"
 import type { CartSuggestionsResult } from "@/lib/cart/types"
 
 /**
- * Muestra hasta 20 productos sugeridos según las categorías de todo el carrito, en grupos de 4.
- * Actualiza las sugerencias al agregar o quitar productos, sin repetir consultas al cambiar cantidades o páginas.
- * Los errores de esta sección no bloquean la compra y permiten reintentar la consulta.
- * @returns Sección de sugerencias con sus estados de carga, error y ausencia de coincidencias.
+ * Muestra hasta 20 productos sugeridos según las categorías del carrito, en grupos de 4.
+ * Consulta las sugerencias con get_cart_suggestions() cuando cambian los productos del carrito y permite reintentar si falla la consulta.
+ * @returns Sección de sugerencias con sus estados de carga, error y sin resultados.
  */
 export function CartSuggestions() {
   const { cart } = useCart()

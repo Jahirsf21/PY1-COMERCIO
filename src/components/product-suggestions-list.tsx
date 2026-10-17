@@ -11,13 +11,11 @@ type ProductSuggestionsListProps = {
 }
 
 /**
- * Muestra las sugerencias consultadas en grupos de 4, sin repetir consultas al cambiar de grupo.
- * Comparte la presentación y navegación entre el carrito y el detalle del producto.
- * Coloca los controles de navegación en el extremo opuesto al título.
+ * Muestra las sugerencias en grupos de 4 con controles para cambiar de grupo.
  * @param props Propiedades del componente.
- * @param props.products Variantes sugeridas disponibles para recorrer.
- * @param props.title Encabezado de la sección de sugerencias.
- * @returns Encabezado con controles y lista del grupo de sugerencias seleccionado.
+ * @param props.products Variantes sugeridas.
+ * @param props.title Encabezado de la sección.
+ * @returns Encabezado con los controles y el grupo de sugerencias seleccionado.
  */
 export function ProductSuggestionsList({ products, title }: ProductSuggestionsListProps) {
   const list_id = useId()
@@ -29,9 +27,8 @@ export function ProductSuggestionsList({ products, title }: ProductSuggestionsLi
   const page_products = products.slice(first_product_index, first_product_index + items_per_page)
 
   /**
-   * Cambia el grupo visible sin desplazar la vista.
-   * No modifica el producto mostrado ni la página del carrito.
-   * @param next_page Grupo de sugerencias que se desea mostrar, empezando en 1.
+   * Cambia el grupo de sugerencias visible.
+   * @param next_page Grupo que se desea mostrar, empezando en 1.
    * @returns No retorna ningún valor.
    */
   function change_page(next_page: number): void {

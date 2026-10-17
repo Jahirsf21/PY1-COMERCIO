@@ -6,11 +6,10 @@ import { get_catalog_quantity_limits, get_cart_validation } from "@/lib/catalog/
 import CartContext from "@/lib/cart/cartContext"
 
 /**
- * Provee el estado global del carrito y sus acciones a los componentes descendientes.
- * Recupera y guarda las líneas válidas, manteniendo una copia en memoria si falla localStorage.
- * Contrasta precios y disponibilidad antes de permitir continuar con la compra.
+ * Provee el estado del carrito y sus acciones a los componentes descendientes.
+ * Recupera el carrito de localStorage, lo guarda en cada cambio y valida sus líneas con el catálogo.
  * @param props Propiedades del proveedor.
- * @param props.children Componentes que podrán consumir el contexto.
+ * @param props.children Componentes que consumen el contexto.
  * @returns Proveedor del contexto del carrito.
  */
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -29,11 +28,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const clear_version = useRef(0)
 
   /**
-   * Aplica una acción al estado más reciente del carrito mediante cart_reducer().
-   * Actualiza las referencias y el estado de React con el mismo arreglo.
-   * Al eliminar productos, retira sus validaciones e invalida las operaciones pendientes asociadas.
-   * @param action Acción que se desea aplicar al carrito.
-   * @returns true si la acción genera un nuevo estado; false si el reducer la rechaza o no hay cambios.
+   * Aplica una acción al carrito mediante cart_reducer() y actualiza el estado.
+   * Al eliminar o vaciar, retira las validaciones de las líneas eliminadas y aumenta sus versiones de eliminación.
+   * @param action Acción que se desea aplicar.
+   * @returns true si el carrito cambió; false si no hubo cambios.
    */
   const apply_action = useCallback((action: CartAction): boolean => {
     const next_cart = cart_reducer(current_cart.current, action)
@@ -53,7 +51,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [])
 
   /**
-   * Reinicia la comprobación sin modificar ni borrar los productos del carrito.
+   * Borra los resultados de validación para volver a validar todas las líneas.
    * @returns No retorna ningún valor.
    */
   const revalidate_cart = useCallback((): void => {
@@ -64,17 +62,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [])
 
   /**
-   * Identifica eliminaciones posteriores para cancelar solicitudes antiguas.
-   * @param item_id Línea asociada a una operación pendiente.
-   * @returns Versión de eliminación de la línea y del carrito completo.
+   * Obtiene la versión de eliminación de una línea y del carrito.
+   * @param item_id Identificador de la línea.
+   * @returns Versión con el formato vaciado:eliminación.
    */
   const get_operation_version = useCallback((item_id: string): string => {
     return `${clear_version.current}:${removal_versions.current.get(item_id) ?? 0}`
   }, [])
 
   /**
-   * Marca un fallo únicamente si la línea consultada todavía es la misma.
-   * @param item Referencia del producto antes de comenzar la consulta.
+   * Marca una línea con estado error si sigue siendo la misma referencia en el carrito.
+   * @param item Línea del carrito.
    * @returns No retorna ningún valor.
    */
   const mark_validation_error = useCallback((item: CartItem): void => {
@@ -87,13 +85,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [])
 
   /**
-   * Consulta límites vigentes y evita confirmar la compra durante una modificación.
-   * @param product_id Producto cuyas variantes se consultan.
-   * @param sku Variante seleccionada.
-   * @param selected_size Talla cuya cantidad se modifica.
-   * @param original_item Línea existente que debe conservarse si falla la consulta.
-   * @returns Límites actuales de la selección.
-   * @throws Si falla la consulta del catálogo; la línea existente se conserva y se marca con error.
+   * Consulta los límites de cantidad de una variante y talla mediante get_catalog_quantity_limits().
+   * Cuenta la consulta como operación pendiente mientras se resuelve.
+   * @param product_id Identificador del producto.
+   * @param sku SKU de la variante.
+   * @param selected_size Talla seleccionada.
+   * @param original_item Línea que se marca con error si falla la consulta.
+   * @returns Límites de cantidad, o null si la variante no está disponible.
+   * @throws Si falla la consulta al catálogo.
    */
   const lookup_limits = useCallback(async (product_id: string, sku: string, selected_size: string, original_item?: CartItem): Promise<CartQuantityLimits | null> => {
     set_pending_operations((operation_count) => operation_count + 1)
@@ -163,17 +162,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
     notice,
     revalidate_cart,
     /**
-     * Cierra el aviso general del carrito sin modificar sus productos.
+     * Cierra el aviso del carrito.
      * @returns No retorna ningún valor.
      */
     dismiss_notice: () => set_notice(null),
     /**
-     * Agrega unidades respetando las reglas vigentes y la cantidad acumulada de SKU+talla.
+     * Agrega unidades de una variante y talla al carrito con los límites consultados en el catálogo.
      * @param product Producto que se desea agregar.
-     * @param selected_size Talla seleccionada por la persona usuaria.
-     * @param quantity Unidades adicionales; por defecto, el mínimo inicial o un paso si la línea ya existe.
-     * @returns true únicamente si el reducer acepta la adición.
-     * @throws Si falla la consulta de reglas y stock del catálogo.
+     * @param selected_size Talla seleccionada.
+     * @param quantity Unidades que se desean agregar; por defecto, el mínimo calculado con get_cart_add_quantity_limits().
+     * @returns true si se agregaron las unidades.
+     * @throws Si falla la consulta al catálogo.
      */
     add_to_cart: async (product: CartProduct, selected_size: string, quantity?: number) => {
       if (quantity !== undefined && (!Number.isSafeInteger(quantity) || quantity < 1)) return false
@@ -200,12 +199,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return action_accepted
     },
     /**
-     * Solicita cambiar la cantidad con reglas y stock recién consultados.
-     * Rechaza cantidades inválidas sin ajustarlas silenciosamente.
-     * @param item_id Identificador de la línea que se actualizará.
-     * @param quantity Cantidad entera solicitada por la persona usuaria.
-     * @returns Promesa que finaliza al procesar la solicitud; no cambia la cantidad si es inválida o la línea cambió durante la consulta.
-     * @throws Si falla la consulta de reglas y stock del catálogo.
+     * Actualiza la cantidad de una línea con los límites consultados en el catálogo.
+     * @param item_id Identificador de la línea.
+     * @param quantity Cantidad nueva.
+     * @returns Promesa que finaliza al procesar el cambio.
+     * @throws Si falla la consulta al catálogo.
      */
     set_quantity: async (item_id: string, quantity: number) => {
       if (!Number.isSafeInteger(quantity)) return
@@ -219,10 +217,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (!action_accepted) revalidate_cart()
     },
     /**
-     * Solicita aumentar un paso con los límites actuales de la variante y talla.
-     * @param item_id Identificador de la línea que se incrementará.
-     * @returns true si el reducer acepta el incremento.
-     * @throws Si falla la consulta de reglas y stock del catálogo.
+     * Aumenta un paso la cantidad de una línea con los límites consultados en el catálogo.
+     * @param item_id Identificador de la línea.
+     * @returns true si la cantidad aumentó.
+     * @throws Si falla la consulta al catálogo.
      */
     increment_item: async (item_id: string) => {
       const item = current_cart.current.find((cart_item) => cart_item.id === item_id)
@@ -235,11 +233,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return action_accepted
     },
     /**
-     * Reduce un paso de la línea sin permitir cantidades inferiores al mínimo.
-     * La eliminación completa se realiza mediante remove_item.
-     * @param item_id Identificador de la línea que se reducirá.
-     * @returns true si el reducer acepta la reducción; false si la línea no existe o la cantidad no está permitida.
-     * @throws Si falla la consulta de reglas y stock del catálogo.
+     * Reduce un paso la cantidad de una línea con los límites consultados en el catálogo.
+     * @param item_id Identificador de la línea.
+     * @returns true si la cantidad se redujo.
+     * @throws Si falla la consulta al catálogo.
      */
     decrement_item: async (item_id: string) => {
       const item = current_cart.current.find((cart_item) => cart_item.id === item_id)
@@ -252,15 +249,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return action_accepted
     },
     /**
-     * Elimina por completo una línea del carrito.
-     * @param item_id Identificador de la línea que se eliminará.
+     * Elimina una línea del carrito.
+     * @param item_id Identificador de la línea.
      * @returns No retorna ningún valor.
      */
     remove_item: (item_id: string) => {
       apply_action({ type: "remove", item_id })
     },
     /**
-     * Vacía el carrito y retira las validaciones de sus productos.
+     * Vacía el carrito.
      * @returns No retorna ningún valor.
      */
     clear_cart: () => {

@@ -16,7 +16,6 @@
   "dependencies": {
     "@base-ui/react": "^1.9.0",
     "@fontsource-variable/geist": "^5.3.0",
-    "@supabase/supabase-js": "^2.117.3",
     "@tailwindcss/vite": "^4.3.3",
     "algoliasearch": "^5.59.0",
     "class-variance-authority": "^0.7.1",
