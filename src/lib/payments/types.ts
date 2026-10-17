@@ -41,6 +41,14 @@ export type CardPaymentData = {
 }
 
 /**
+ * Resultado del sandbox de pagos con su estado final y un mensaje breve
+ */
+export type PaymentResult = {
+  status: Exclude<PaymentStatus, "PENDING">
+  message: string
+}
+
+/**
  * Monto, moneda y estado del pago de un pedido
  */
 export type Payment = {
