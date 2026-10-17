@@ -1,6 +1,7 @@
 import type { CartItem } from "@/lib/cart/types"
 import type { BuyerInfo, CheckoutFormData, DeliveryInfo } from "@/lib/checkout/types"
 import type { OrderAction, OrderDetails, OrderItem, OrderStatus, OrdersStorageSnapshot } from "@/lib/orders/types"
+import type { Payment } from "@/lib/payments/types"
 import { get_cart_shipping_cost, get_cart_subtotal, get_cart_tax, get_cart_total, get_item_subtotal } from "@/lib/cart/cart"
 import { get_stored_json, is_nonempty_string, is_positive_integer, is_record, is_valid_currency, is_valid_image, is_valid_price, save_stored_list } from "@/lib/shared/utils"
 
@@ -84,10 +85,37 @@ function parse_order_item(raw_item: unknown, order_id: string): OrderItem | null
 }
 
 /**
+ * Valida el pago de un pedido.
+ * Comprueba los identificadores, la fecha, el monto, la moneda y el estado, y que pertenezca al pedido y coincida con su total y moneda.
+ * @param raw_payment Pago sin validar.
+ * @param order Identificador, total y moneda del pedido.
+ * @returns Pago validado, o null si es inválido.
+ */
+function parse_order_payment(raw_payment: unknown, order: Pick<OrderDetails, "id" | "total" | "currency">): Payment | null {
+  if (!is_record(raw_payment) || !is_nonempty_string(raw_payment.id) || raw_payment.order_id !== order.id ||
+    typeof raw_payment.created_at !== "string" || Number.isNaN(Date.parse(raw_payment.created_at)) ||
+    !is_valid_price(raw_payment.amount) || raw_payment.amount !== order.total ||
+    !is_valid_currency(raw_payment.currency) || raw_payment.currency !== order.currency ||
+    (raw_payment.status !== "PENDING" && raw_payment.status !== "APPROVE" && raw_payment.status !== "DECLINED" && raw_payment.status !== "ERROR")) {
+    return null
+  }
+
+  return {
+    id: raw_payment.id.trim(),
+    order_id: order.id,
+    created_at: raw_payment.created_at,
+    amount: raw_payment.amount,
+    currency: raw_payment.currency,
+    status: raw_payment.status,
+  }
+}
+
+/**
  * Valida los datos de los pedidos y conserva los que tienen una estructura válida.
  * Por cada pedido:
  * - Valida el identificador, el número, la fecha, la moneda, los montos y el estado.
  * - Valida la persona compradora, la entrega y los productos mediante parse_order_buyer(), parse_order_delivery() y parse_order_item().
+ * - Valida que payment sea null o un pago válido según parse_order_payment().
  * - Descarta los pedidos con un identificador o número repetido.
  * @param orders_data Datos de los pedidos sin validar.
  * @returns Pedidos validados.
@@ -115,7 +143,8 @@ export function parse_orders_data(orders_data: unknown): OrdersStorageSnapshot {
     const buyer = parse_order_buyer(raw_order.buyer)
     const delivery = parse_order_delivery(raw_order.delivery)
     const items = raw_order.items.map((raw_item) => parse_order_item(raw_item, order_id))
-    if (!buyer || !delivery || items.some((item) => item === null) ||
+    const payment = raw_order.payment === null ? null : parse_order_payment(raw_order.payment, { id: order_id, total: raw_order.total, currency: raw_order.currency })
+    if (!buyer || !delivery || items.some((item) => item === null) || (raw_order.payment !== null && !payment) ||
       orders_by_id.has(order_id) || order_numbers.has(raw_order.order_number)) {
       storage_snapshot.discarded_orders = true
       continue
@@ -134,6 +163,7 @@ export function parse_orders_data(orders_data: unknown): OrdersStorageSnapshot {
       total: raw_order.total,
       status: raw_order.status,
       items: items.filter((item) => item !== null),
+      payment,
     })
     order_numbers.add(raw_order.order_number)
   }
@@ -199,7 +229,7 @@ export function create_order_item(item: CartItem, order_id: string): OrderItem {
  * @param form_data Información del comprador y la entrega.
  * @param cart Líneas del carrito.
  * @param order_number Número del pedido.
- * @returns Pedido creado, o null si el carrito está vacío o tiene más de una moneda.
+ * @returns Pedido creado sin pago, o null si el carrito está vacío o tiene más de una moneda.
  */
 export function create_order(form_data: CheckoutFormData, cart: CartItem[], order_number: number): OrderDetails | null {
   if (cart.length === 0 || new Set(cart.map((item) => item.currency)).size !== 1) return null
@@ -217,6 +247,7 @@ export function create_order(form_data: CheckoutFormData, cart: CartItem[], orde
     total: get_cart_total(cart),
     status: "PENDING",
     items: cart.map((item) => create_order_item(item, order_id)),
+    payment: null,
   }
 }
 

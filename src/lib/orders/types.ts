@@ -1,6 +1,7 @@
 import type { ProductImage } from "@/lib/catalog/types"
 import type { CartItem } from "@/lib/cart/types"
 import type { BuyerInfo, CheckoutFormData, DeliveryInfo } from "@/lib/checkout/types"
+import type { Payment } from "@/lib/payments/types"
 
 /**
  * Estados disponibles para un pedido
@@ -42,10 +43,12 @@ export type Order = {
 }
 
 /**
- * Pedido con los productos comprados
+ * Pedido con los productos comprados y su pago.
+ * payment es null si todavía no existe un intento de pago.
  */
 export type OrderDetails = Order & {
   items: OrderItem[]
+  payment: Payment | null
 }
 
 /**
