@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useMatch } from "react-router-dom"
 import Catalog from "@/features/catalog/Catalog"
 import CartPage from "@/features/cart/CartPage"
 import Checkout from "@/features/checkout/Checkout"
+import PaymentPage from "@/features/payments/PaymentPage"
 import ProductDetailPage from "@/features/product-detail/ProductDetailPage"
 import { clear_stored_checkout_form_data } from "@/lib/checkout/checkout"
 import { useCart } from "@/lib/cart/cartContext"
@@ -29,7 +30,7 @@ function App() {
         element={cart.length === 0 ? <Navigate to="/carrito" replace /> : <Checkout />}
       />
       <Route path="/producto/:productId" element={<ProductDetailPage />} />
-      
+      <Route path="/pedido/:orderId/pago" element={<PaymentPage />} />
     </Routes>
   )
 }

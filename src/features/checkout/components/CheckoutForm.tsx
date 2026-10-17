@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { startTransition, useEffect, useRef, useState } from "react"
 import type { SubmitEvent } from "react"
 import { useNavigate } from "react-router-dom"
 import { FieldGroup, FieldSeparator } from "@/components/ui/field"
@@ -123,7 +123,9 @@ export function CheckoutForm() {
   /**
    * Valida los datos del comprador y la entrega al enviar el formulario.
    * Si hay errores, los muestra y enfoca el primer campo inválido.
-   * Si los datos son válidos, genera la orden mediante create_order(), vacía el carrito y vuelve al catálogo.
+   * Espera un nombre válido de Hacienda cuando la identificación requiere consulta.
+   * Si los datos son válidos, guarda la orden mediante create_order(), vacía el carrito y abre su vista de pago.
+   * Agrupa el vaciado y la navegación para evitar que la protección de checkout redirija antes de abrir el pago.
    * @param event Evento de envío del formulario.
    * @returns No retorna ningún valor.
    */
@@ -136,9 +138,11 @@ export function CheckoutForm() {
     if (!isManual && buyer_errors.full_name) {
       const name_error = buyer_errors.full_name
       delete buyer_errors.full_name
-      if (!canLookupName || currentNameResult) {
-        buyer_errors.identification_number ??= lookupError ?? name_error
-      }
+      buyer_errors.identification_number ??= lookupError ?? (
+        canLookupName && !currentNameResult
+          ? "Espera a que se complete la consulta del nombre antes de continuar."
+          : name_error
+      )
     }
 
     setBuyerErrors(buyer_errors)
@@ -149,13 +153,15 @@ export function CheckoutForm() {
       if (!order) {
         toast.add({
           title: "No pudimos generar la orden",
-          description: "Revisa los productos de tu carrito e intenta nuevamente.",
+          description: "Revisa los productos y que tu navegador permita guardar datos, e intenta nuevamente.",
           type: "error",
         })
         return
       }
-      clear_cart()
-      navigate("/")
+      startTransition(() => {
+        clear_cart()
+        navigate(`/pedido/${order.id}/pago`)
+      })
       toast.add({
         title: `Orden #${order.order_number} generada`,
         description: `Total: ${format_price(order.total, order.currency)}`,
