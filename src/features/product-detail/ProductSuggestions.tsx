@@ -10,12 +10,11 @@ type ProductSuggestionsProps = {
 }
 
 /**
- * Muestra hasta 20 sugerencias por categorías del producto actual, en grupos de 4 y sin filtrar por marca.
- * No repite consultas al cambiar el color o la talla si los criterios siguen siendo los mismos.
- * Descarta respuestas anteriores y permite reintentar sin bloquear el detalle ni la compra.
+ * Muestra hasta 20 sugerencias según las categorías del producto, en grupos de 4.
+ * Consulta las sugerencias con get_product_suggestions() y permite reintentar si falla la consulta.
  * @param props Propiedades del componente.
- * @param props.product Identificador y categorías del producto mostrado.
- * @returns Sección de sugerencias con sus estados de carga, error y ausencia de coincidencias.
+ * @param props.product Identificador y categorías del producto.
+ * @returns Sección de sugerencias con sus estados de carga, error y sin resultados.
  */
 export function ProductSuggestions({ product }: ProductSuggestionsProps) {
   const [retry_count, set_retry_count] = useState(0)

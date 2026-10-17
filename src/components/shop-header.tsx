@@ -4,7 +4,10 @@ import { CartIndicator } from "@/features/cart/components/CartIndicator"
 import { cn } from "@/lib/shared/utils"
 
 /**
- * Muestra la marca y el acceso al carrito, con la opción de permanecer visible durante el desplazamiento.
+ * Muestra el encabezado con la marca y el acceso al carrito.
+ * @param props Propiedades del componente.
+ * @param props.sticky Indica si el encabezado permanece fijo al desplazarse; por defecto, false.
+ * @returns Encabezado de la tienda.
  */
 export function ShopHeader({ sticky = false }: { sticky?: boolean }) {
   return (

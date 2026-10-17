@@ -10,14 +10,17 @@ type RemoveCartItemDialogProps = {
 }
 
 /**
- * Botón para eliminar una línea del carrito que pide confirmación antes de hacerlo.
- * Si la persona cancela o cierra el cuadro, el producto permanece en el carrito.
+ * Muestra el botón para eliminar una línea del carrito con un cuadro de confirmación.
+ * @param props Propiedades del componente.
+ * @param props.item Línea del carrito.
+ * @returns Botón y cuadro de confirmación.
  */
 export function RemoveCartItemDialog({ item }: RemoveCartItemDialogProps) {
   const { remove_item } = useCart()
 
   /**
-   * Elimina la línea del carrito y confirma la acción con un aviso.
+   * Elimina la línea del carrito y muestra un aviso de confirmación.
+   * @returns No retorna ningún valor.
    */
   function handleConfirm() {
     remove_item(item.id)

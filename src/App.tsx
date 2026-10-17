@@ -6,7 +6,6 @@ import Checkout from "@/features/checkout/Checkout"
 import ProductDetailPage from "@/features/product-detail/ProductDetailPage"
 import { clear_stored_checkout_form_data } from "@/lib/checkout/checkout"
 import { useCart } from "@/lib/cart/cartContext"
-import "@/lib/supabase/supabase"
 import "@/App.css"
 
 function App() {

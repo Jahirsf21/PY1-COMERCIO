@@ -1,15 +1,21 @@
 import { useEffect, useRef, useState } from "react"
 import type { SubmitEvent } from "react"
+import { useNavigate } from "react-router-dom"
 import { FieldGroup, FieldSeparator } from "@/components/ui/field"
+import { toast } from "@/components/ui/toast"
 import { CheckoutBuyerFields } from "@/features/checkout/components/CheckoutBuyerFields"
 import { CheckoutDeliveryFields } from "@/features/checkout/components/CheckoutDeliveryFields"
 import { get_stored_checkout_form_data, save_checkout_form_data, validate_buyer_fields, validate_delivery_fields } from "@/lib/checkout/checkout"
 import { get_name_from_hacienda, validate_identification } from "@/lib/identification/identification"
 import type { BuyerInfo, DeliveryInfo } from "@/lib/checkout/types"
 import { useCart } from "@/lib/cart/cartContext"
+import { useOrders } from "@/lib/orders/ordersContext"
+import { format_price } from "@/lib/shared/utils"
 
 export function CheckoutForm() {
-  const { can_checkout } = useCart()
+  const { cart, can_checkout, clear_cart } = useCart()
+  const { create_order } = useOrders()
+  const navigate = useNavigate()
   const formRef = useRef<HTMLFormElement>(null)
   const [formData, setFormData] = useState(get_stored_checkout_form_data)
   const [buyerErrors, setBuyerErrors] = useState<Partial<Record<keyof BuyerInfo, string>>>({})
@@ -55,12 +61,12 @@ export function CheckoutForm() {
   }, [canLookupName, identificationNumber, identificationType, lookupKey])
 
   /**
-   * Actualiza un campo del comprador y descarta los errores que dejan de corresponder al valor ingresado.
-   * Elimina los números del nombre completo al escribir o pegar texto.
-   * Conserva únicamente dígitos en los teléfonos y en todos los tipos de identificación.
-   * Limita el número de identificación a un máximo de 12 dígitos y los teléfonos a 8.
-   * @param field Campo de identificación o contacto que se desea actualizar.
-   * @param value Nuevo valor ingresado por la persona compradora.
+   * Actualiza un campo del comprador y borra sus errores.
+   * Elimina los números del nombre completo, conserva solo los dígitos de la identificación y los teléfonos, y limita la identificación a 12 dígitos y los teléfonos a 8.
+   * Al cambiar el tipo de identificación, vacía el nombre completo.
+   * @param field Campo del comprador.
+   * @param value Valor nuevo.
+   * @returns No retorna ningún valor.
    */
   function handleBuyerChange<Field extends keyof BuyerInfo>(field: Field, value: BuyerInfo[Field]) {
     if (field === "full_name" && !isManual) return
@@ -88,10 +94,11 @@ export function CheckoutForm() {
   }
 
   /**
-   * Actualiza un campo de entrega y reinicia las ubicaciones que dependen de la selección modificada.
-   * Conserva únicamente dígitos en el código postal y limita su longitud a 5.
-   * @param field Campo de la dirección de entrega que se desea actualizar.
-   * @param value Nuevo valor ingresado o seleccionado por la persona compradora.
+   * Actualiza un campo de la entrega y vacía las ubicaciones que dependen de él.
+   * Conserva solo los dígitos del código postal y limita su longitud a 5.
+   * @param field Campo de la entrega.
+   * @param value Valor nuevo.
+   * @returns No retorna ningún valor.
    */
   function handleDeliveryChange(field: keyof DeliveryInfo, value: string) {
     const next_value = field === "postal_code" ? value.replace(/\D/g, "").slice(0, 5) : value
@@ -114,9 +121,11 @@ export function CheckoutForm() {
   }
 
   /**
-   * Valida los datos del comprador y la entrega al intentar generar una orden.
-   * Muestra los errores y enfoca el primer campo que requiere corrección.
+   * Valida los datos del comprador y la entrega al enviar el formulario.
+   * Si hay errores, los muestra y enfoca el primer campo inválido.
+   * Si los datos son válidos, genera la orden mediante create_order(), vacía el carrito y vuelve al catálogo.
    * @param event Evento de envío del formulario.
+   * @returns No retorna ningún valor.
    */
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -135,7 +144,25 @@ export function CheckoutForm() {
     setBuyerErrors(buyer_errors)
     setDeliveryErrors(delivery_errors)
     const has_errors = Object.keys(buyer_errors).length > 0 || Object.keys(delivery_errors).length > 0
-    if (!has_errors) return
+    if (!has_errors) {
+      const order = create_order({ buyer, delivery: formData.delivery }, cart)
+      if (!order) {
+        toast.add({
+          title: "No pudimos generar la orden",
+          description: "Revisa los productos de tu carrito e intenta nuevamente.",
+          type: "error",
+        })
+        return
+      }
+      clear_cart()
+      navigate("/")
+      toast.add({
+        title: `Orden #${order.order_number} generada`,
+        description: `Total: ${format_price(order.total, order.currency)}`,
+        type: "success",
+      })
+      return
+    }
 
     window.requestAnimationFrame(() => {
       const invalid_field = formRef.current?.querySelector<HTMLElement>(

@@ -11,8 +11,10 @@ type CartItemCardProps = {
 }
 
 /**
- * Muestra una línea del carrito con controles de cantidad y eliminación con confirmación.
- * Se adapta al ancho disponible para reutilizarla en el carrito y en el checkout.
+ * Muestra una línea del carrito con sus controles de cantidad y eliminación.
+ * @param props Propiedades del componente.
+ * @param props.item Línea del carrito.
+ * @returns Tarjeta de la línea del carrito.
  */
 export function CartItemCard({ item }: CartItemCardProps) {
   const { item_validation } = useCart()

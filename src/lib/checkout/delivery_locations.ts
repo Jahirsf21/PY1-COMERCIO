@@ -1,5 +1,5 @@
 /**
- * Provincias, cantones y distritos de Costa Rica para el servicio de checkout.
+ * Provincias, cantones y distritos de Costa Rica disponibles para la entrega.
  */
 export const delivery_locations: Record<string, Record<string, string[]>> = {
   "Limón": {
@@ -102,9 +102,8 @@ export const delivery_locations: Record<string, Record<string, string[]>> = {
 }
 
 /**
- * Rangos de códigos postales por provincia utilizados para validar las entregas.
+ * Rangos de códigos postales por provincia.
  * El primer dígito identifica la provincia; los dos siguientes, el cantón; y los dos últimos, el distrito.
- * Los límites no representan una lista exhaustiva de códigos válidos de cantones y distritos.
  */
 export const delivery_postal_code_ranges: Record<string, { minimum: number; maximum: number }> = {
   "San José": { minimum: 10101, maximum: 12006 },

@@ -22,9 +22,8 @@ export default function CartPage() {
   const visible_pages = Array.from({ length: visible_page_count }, (_, page_index) => first_visible_page + page_index)
 
   /**
-   * Cambia la página visible y desplaza la vista al inicio de los productos.
-   * Mantiene el carrito completo para sus totales y validaciones.
-   * @param next_page Página de productos que se desea mostrar.
+   * Cambia la página visible del carrito y desplaza la vista al inicio de la lista.
+   * @param next_page Página que se desea mostrar.
    * @returns No retorna ningún valor.
    */
   function change_page(next_page: number): void {
