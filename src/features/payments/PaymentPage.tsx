@@ -1,5 +1,6 @@
 import { Link, useParams } from "react-router-dom"
-import { ArrowLeftIcon, CircleCheckIcon } from "lucide-react"
+import { CircleCheckIcon } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { ShopHeader } from "@/components/shop-header"
 import { PaymentForm } from "@/features/payments/components/PaymentForm"
 import { PaymentOrderSummary } from "@/features/payments/components/PaymentOrderSummary"
@@ -9,23 +10,21 @@ import { useOrders } from "@/lib/orders/ordersContext"
 /**
  * Muestra el pago y la confirmación de una orden recuperada mediante su identificador.
  * Usa la orden guardada para funcionar al recargar o con el carrito vacío.
+ * Permite reintentar el guardado de un resultado sin repetir el pago ni anunciar una confirmación todavía no persistida.
  * @returns Página de pago, confirmación o aviso si la orden no está disponible.
  */
 export default function PaymentPage() {
   const { orderId } = useParams<{ orderId: string }>()
-  const { get_order, storage_error, notice } = useOrders()
+  const { get_order, storage_error, notice, unsaved_order_ids, retry_save_orders } = useOrders()
   const order = orderId ? get_order(orderId) : undefined
-  const is_confirmed = order?.status === "CONFIRMED" && order.payment?.status === "APPROVE"
+  const has_unsaved_result = order !== undefined && unsaved_order_ids.includes(order.id)
+  const is_confirmed = !has_unsaved_result && order?.status === "CONFIRMED" && order.payment?.status === "APPROVE"
   const is_blocked = order && (order.status !== "PENDING" || order.payment?.status === "APPROVE")
 
   return (
     <div className="min-h-dvh bg-background">
       <ShopHeader sticky />
       <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-6">
-        <Link to="/" className="mb-5 inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          <ArrowLeftIcon aria-hidden="true" className="size-4" />
-          Volver al catálogo
-        </Link>
         {storage_error && (
           <p role="alert" className="mb-5 rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm">
             No pudimos guardar o recuperar tus pedidos en este navegador. Revisa sus permisos de almacenamiento antes de continuar.
@@ -44,7 +43,17 @@ export default function PaymentPage() {
             <h1 className="text-2xl font-semibold">{is_confirmed ? "Compra confirmada" : "Pago de tu orden"}</h1>
             <p className="mt-2 text-sm text-muted-foreground">Orden #{order.order_number}</p>
             <div className="mt-6 grid items-start gap-6 lg:grid-cols-2">
-              {is_confirmed ? (
+              {has_unsaved_result ? (
+                <section role="alert" aria-labelledby="payment-save-title" className="rounded-xl border border-input bg-card p-5 sm:p-6">
+                  <h2 id="payment-save-title" className="text-lg font-semibold">Resultado pendiente de guardar</h2>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    No pudimos guardar el resultado del pago. Al reintentar no se realizará otro pago.
+                  </p>
+                  <Button type="button" onClick={() => { retry_save_orders() }} className="mt-6 cursor-pointer">
+                    Reintentar
+                  </Button>
+                </section>
+              ) : is_confirmed ? (
                 <section role="status" aria-labelledby="payment-confirmation-title" className="rounded-xl border border-input bg-card p-5 sm:p-6">
                   <CircleCheckIcon aria-hidden="true" className="mb-4 size-10 text-primary" />
                   <h2 id="payment-confirmation-title" className="text-lg font-semibold">¡Pago aprobado!</h2>

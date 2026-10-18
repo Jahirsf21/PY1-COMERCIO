@@ -108,8 +108,9 @@ export function PaymentForm({ order }: { order: OrderDetails }) {
       const result = await pay_order(order.id, { ...card_data })
       set_feedback({
         title: result.status === "rejected" ? "No pudimos iniciar el pago"
-          : result.payment.status === "DECLINED" ? "Pago rechazado"
-            : result.payment.status === "ERROR" ? "No se pudo completar el pago" : "Pago aprobado",
+          : result.status === "unsaved" ? "Resultado pendiente de guardar"
+            : result.payment.status === "DECLINED" ? "Pago rechazado"
+              : result.payment.status === "ERROR" ? "No se pudo completar el pago" : "Pago aprobado",
         message: result.message,
       })
     } catch {

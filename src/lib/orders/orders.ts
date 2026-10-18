@@ -115,7 +115,7 @@ function parse_order_payment(raw_payment: unknown, order: Pick<OrderDetails, "id
  * Por cada pedido:
  * - Valida el identificador, el número, la fecha, la moneda, los montos y el estado.
  * - Valida la persona compradora, la entrega y los productos mediante parse_order_buyer(), parse_order_delivery() y parse_order_item().
- * - Valida que payment sea null o un pago válido según parse_order_payment().
+ * - Valida que payment sea null o un pago válido según parse_order_payment(), y que su estado sea compatible con el pedido.
  * - Descarta los pedidos con un identificador o número repetido.
  * @param orders_data Datos de los pedidos sin validar.
  * @returns Pedidos validados.
@@ -133,7 +133,7 @@ export function parse_orders_data(orders_data: unknown): OrdersStorageSnapshot {
     if (!is_record(raw_order) || !is_nonempty_string(raw_order.id) || !is_positive_integer(raw_order.order_number) ||
       typeof raw_order.created_at !== "string" || Number.isNaN(Date.parse(raw_order.created_at)) || !is_valid_currency(raw_order.currency) ||
       !is_valid_price(raw_order.subtotal) || !is_valid_price(raw_order.tax) || !is_valid_price(raw_order.shipping) || !is_valid_price(raw_order.total) ||
-      (raw_order.status !== "PENDING" && raw_order.status !== "CONFIRMED" && raw_order.status !== "FAILED") ||
+      (raw_order.status !== "PENDING" && raw_order.status !== "CONFIRMED" && raw_order.status !== "CANCELLED") ||
       !Array.isArray(raw_order.items) || raw_order.items.length === 0) {
       storage_snapshot.discarded_orders = true
       continue
@@ -144,8 +144,11 @@ export function parse_orders_data(orders_data: unknown): OrdersStorageSnapshot {
     const delivery = parse_order_delivery(raw_order.delivery)
     const items = raw_order.items.map((raw_item) => parse_order_item(raw_item, order_id))
     const payment = raw_order.payment === null ? null : parse_order_payment(raw_order.payment, { id: order_id, total: raw_order.total, currency: raw_order.currency })
+    const has_inconsistent_payment = (raw_order.status === "CONFIRMED" && payment?.status !== "APPROVE") ||
+      (raw_order.status !== "CONFIRMED" && payment?.status === "APPROVE") ||
+      (raw_order.status === "CANCELLED" && payment?.status === "PENDING")
     if (!buyer || !delivery || items.some((item) => item === null) || (raw_order.payment !== null && !payment) ||
-      orders_by_id.has(order_id) || order_numbers.has(raw_order.order_number)) {
+      has_inconsistent_payment || orders_by_id.has(order_id) || order_numbers.has(raw_order.order_number)) {
       storage_snapshot.discarded_orders = true
       continue
     }
@@ -263,18 +266,17 @@ export function add_order(state: OrderDetails[], new_order: OrderDetails): Order
 }
 
 /**
- * Actualiza el estado de un pedido.
- * No permite confirmar un pedido ni cambiar el estado de un pedido confirmado; la confirmación solo ocurre al aprobarse su pago.
+ * Cancela un pedido pendiente que no tenga un pago en proceso o aprobado.
+ * Conserva los productos y el último pago, sin permitir reactivar el pedido.
  * @param state Estado actual de los pedidos.
  * @param order_id Identificador del pedido.
- * @param status Estado nuevo.
- * @returns Pedidos actualizados, o el mismo estado si el pedido no existe, ya tiene ese estado, está confirmado o el estado nuevo es CONFIRMED.
+ * @returns Pedidos actualizados, o el mismo estado si el pedido no existe o no admite cancelación.
  */
-export function set_order_status(state: OrderDetails[], order_id: string, status: OrderStatus): OrderDetails[] {
+export function cancel_order(state: OrderDetails[], order_id: string): OrderDetails[] {
   const order = state.find((current_order) => current_order.id === order_id)
-  if (!order || order.status === status || order.status === "CONFIRMED" || status === "CONFIRMED") return state
+  if (!order || order.status !== "PENDING" || order.payment?.status === "PENDING" || order.payment?.status === "APPROVE") return state
   return state.map((current_order) =>
-    current_order.id === order_id ? { ...current_order, status } : current_order,
+    current_order.id === order_id ? { ...current_order, status: "CANCELLED" } : current_order,
   )
 }
 
@@ -285,6 +287,7 @@ export function set_order_status(state: OrderDetails[], order_id: string, status
  */
 export function get_order_payment_block(order: OrderDetails): string | null {
   if (order.status === "CONFIRMED" || order.payment?.status === "APPROVE") return "Esta orden ya fue pagada."
+  if (order.status === "CANCELLED") return "Esta orden está cancelada."
   if (order.status !== "PENDING") return "Esta orden no se puede pagar."
   if (order.payment?.status === "PENDING") return "Ya hay un pago en proceso para esta orden."
   return null
@@ -331,11 +334,11 @@ export function start_order_payment(state: OrderDetails[], order_id: string, pay
  * @param order_id Identificador del pedido.
  * @param payment_id Identificador del pago.
  * @param result Resultado del sandbox de pagos.
- * @returns Pedidos actualizados, o el mismo estado si el pedido no existe o el pago ya no es el vigente o no está PENDING.
+ * @returns Pedidos actualizados, o el mismo estado si el pedido no está PENDING o el pago ya no es el vigente o no está PENDING.
  */
 export function complete_order_payment(state: OrderDetails[], order_id: string, payment_id: string, result: PaymentResult): OrderDetails[] {
   const order = state.find((current_order) => current_order.id === order_id)
-  if (!order || !order.payment || order.payment.id !== payment_id || order.payment.status !== "PENDING") return state
+  if (!order || order.status !== "PENDING" || !order.payment || order.payment.id !== payment_id || order.payment.status !== "PENDING") return state
   const payment: Payment = { ...order.payment, status: result.status }
   const status: OrderStatus = result.status === "APPROVE" ? "CONFIRMED" : order.status
   return state.map((current_order) =>
@@ -344,7 +347,8 @@ export function complete_order_payment(state: OrderDetails[], order_id: string, 
 }
 
 /**
- * Cambia a ERROR los pagos que quedaron en PENDING al recargar la página.
+ * Cambia a ERROR los pagos de simulaciones locales interrumpidas por una recarga, sin ejecutarlos nuevamente.
+ * Esta recuperación solo aplica al sandbox sin cobros reales; una pasarela real requiere verificar el resultado.
  * @param orders Pedidos recuperados.
  * @returns Pedidos con los pagos interrumpidos en ERROR, o el mismo arreglo si no había pagos pendientes.
  */
@@ -367,8 +371,8 @@ export function orders_reducer(state: OrderDetails[], action: OrderAction): Orde
   switch (action.type) {
     case "add":
       return add_order(state, action.order)
-    case "set_status":
-      return set_order_status(state, action.order_id, action.status)
+    case "cancel":
+      return cancel_order(state, action.order_id)
     case "start_payment":
       return start_order_payment(state, action.order_id, action.payment)
     case "complete_payment":

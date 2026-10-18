@@ -6,7 +6,7 @@ import type { CardPaymentData, Payment, PaymentResult } from "@/lib/payments/typ
 /**
  * Estados disponibles para un pedido
  */
-export type OrderStatus = "PENDING" | "CONFIRMED" | "FAILED"
+export type OrderStatus = "PENDING" | "CONFIRMED" | "CANCELLED"
 
 /**
  * Producto de un pedido con su talla, cantidad, precio y subtotal
@@ -69,9 +69,8 @@ export type OrderAction =
     order: OrderDetails
   }
   | {
-    type: "set_status"
+    type: "cancel"
     order_id: string
-    status: OrderStatus
   }
   | {
     type: "start_payment"
@@ -87,12 +86,13 @@ export type OrderAction =
 
 /**
  * Resultado de pagar un pedido.
- * processed: el sandbox procesó el pago; payment contiene su estado final y message describe el resultado.
+ * processed: el resultado final del sandbox se guardó correctamente.
+ * unsaved: el resultado final permanece en memoria y debe guardarse antes de continuar.
  * rejected: el pago no se inició o su respuesta ya no corresponde al pago vigente del pedido.
  */
 export type PayOrderResult =
   | {
-    status: "processed"
+    status: "processed" | "unsaved"
     payment: Payment
     message: string
   }
@@ -108,9 +108,11 @@ export type OrdersContextValue = {
   orders: OrderDetails[]
   storage_error: boolean
   notice: string | null
+  unsaved_order_ids: string[]
   dismiss_notice: () => void
+  retry_save_orders: () => boolean
   get_order: (order_id: string) => OrderDetails | undefined
   create_order: (form_data: CheckoutFormData, cart: CartItem[]) => OrderDetails | null
-  update_order_status: (order_id: string, status: OrderStatus) => boolean
+  cancel_order: (order_id: string) => boolean
   pay_order: (order_id: string, card_data: CardPaymentData) => Promise<PayOrderResult>
 }
