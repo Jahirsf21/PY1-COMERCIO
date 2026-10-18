@@ -144,4 +144,4 @@ Cada orden tiene un solo pago; cada reintento reemplaza al intento fallido anter
 
 ## Manejo de errores
 
-Los formularios de checkout y de pago validan cada campo y muestran el error debajo del campo correspondiente antes de enviar los datos. Los pagos rechazados y los errores de la pasarela muestran un mensaje claro y dejan la orden pendiente para reintentar. Las fallas al guardar datos en el navegador se notifican sin dejar la orden en un estado inconsistente. Para más detalle, consulta la [documentación externa](#).
+Los formularios de checkout y de pago validan cada campo y muestran el error debajo del campo correspondiente antes de enviar los datos. Los pagos rechazados y los errores de la pasarela muestran un mensaje claro y dejan la orden pendiente para reintentar. Las fallas al guardar datos en el navegador se notifican sin dejar la orden en un estado inconsistente. Para más detalle, consulta la [documentación externa](https://drive.google.com/file/d/15lcOZunfEv-0NstLUK3AcFNZVoThBcYO/view).
