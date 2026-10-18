@@ -1,7 +1,7 @@
 import { ExpandIcon, XIcon } from "lucide-react"
 import { Dialog, DialogClose, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import type { ProductImage } from "@/lib/types/product"
+import type { ProductImage } from "@/lib/catalog/types"
 
 type ProductImagePreviewProps = {
   image: ProductImage;

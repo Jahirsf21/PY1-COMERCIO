@@ -55,7 +55,7 @@ export type ProductFacets = {
 }
 
 /**
- * Esquema del producto recibido
+ * Esquema del producto recibido por el servicio de catálogo.
  */
 export type ProductRecord = {
   objectID: string
@@ -100,6 +100,16 @@ export type VariantsResult = {
   productId: string
   variants: ProductHit[]
   error: boolean
+}
+
+/**
+ * Resultado de consultar las sugerencias del producto mostrado en el detalle.
+ * request_key identifica la consulta que generó el resultado.
+ */
+export type ProductSuggestionsResult = {
+  request_key: string
+  products: ProductHit[]
+  has_error: boolean
 }
 
 export type ProductHit = Hit<ProductRecord>

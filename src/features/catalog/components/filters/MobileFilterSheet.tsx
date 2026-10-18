@@ -9,10 +9,10 @@ export function MobileFilterSheet() {
     <Sheet>
       <SheetTrigger
         render={
-          <Button className="absolute right-4 bottom-4 z-40 h-12 cursor-pointer gap-2 rounded-full px-5 shadow-lg hover:shadow-xl motion-reduce:transition-none lg:hidden" />
+          <Button className="h-10 cursor-pointer gap-1.5 rounded-full px-4 text-xs shadow-lg hover:shadow-xl motion-reduce:transition-none" />
         }
       >
-        <SlidersHorizontalIcon aria-hidden="true" />
+        <SlidersHorizontalIcon aria-hidden="true" className="size-3.5" />
         Filtros
       </SheetTrigger>
       <SheetContent

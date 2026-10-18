@@ -1,37 +1,52 @@
+import { useRef, useState } from "react"
 import { Link } from "react-router-dom"
-import { ArrowLeftIcon, ShoppingCartIcon } from "lucide-react"
+import { ShoppingCartIcon } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import { ShopHeader } from "@/components/shop-header"
-import { useCart } from "@/lib/context/useCart"
-import { get_item_subtotal } from "@/lib/cart"
-import { CartQuantityStepper } from "@/features/cart/components/CartQuantityStepper"
-import { RemoveCartItemDialog } from "@/features/cart/components/RemoveCartItemDialog"
+import { useCart } from "@/lib/cart/cartContext"
+import { get_cart_pagination } from "@/lib/cart/cart"
+import { format_price } from "@/lib/shared/utils"
+import { CartItemCard } from "@/features/cart/components/CartItemCard"
+import { CartStatus } from "@/features/cart/components/CartStatus"
+import { CartSuggestions } from "@/features/cart/components/CartSuggestions"
 
-function formatPrice(value: number, currency: string) {
-  return new Intl.NumberFormat("es-CR", { style: "currency", currency }).format(value)
-}
 
 export default function CartPage() {
-  const { cart, subtotal, shipping, tax, total, total_items: totalUnits } = useCart()
+  const { cart, subtotal, shipping, tax, total, total_items: totalUnits, can_checkout } = useCart()
+  const [requested_page, set_requested_page] = useState(1)
+  const products_container = useRef<HTMLDivElement>(null)
+  const { page_items, current_page, total_pages } = get_cart_pagination(cart, requested_page)
+  const visible_page_count = Math.min(5, total_pages)
+  const first_visible_page = Math.max(1, Math.min(current_page - Math.floor(visible_page_count / 2), total_pages - visible_page_count + 1))
+  const visible_pages = Array.from({ length: visible_page_count }, (_, page_index) => first_visible_page + page_index)
+
+  /**
+   * Cambia la página visible del carrito y desplaza la vista al inicio de la lista.
+   * @param next_page Página que se desea mostrar.
+   * @returns No retorna ningún valor.
+   */
+  function change_page(next_page: number): void {
+    if (next_page === current_page || next_page < 1 || next_page > total_pages) return
+    set_requested_page(next_page)
+    products_container.current?.scrollIntoView({
+      block: "start",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+    })
+  }
 
   return (
     <div className="min-h-dvh bg-background">
-      <ShopHeader />
+      <ShopHeader sticky />
       <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-6">
-        <Link
-          to="/"
-          className="mb-5 inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <ArrowLeftIcon aria-hidden="true" className="size-4" />
-          Volver al catálogo
-        </Link>
         <div className="mb-6">
           <h1 className="text-2xl font-semibold">Tu carrito</h1>
-          {cart.length > 0 && (
-            <p className="mt-1 text-sm text-muted-foreground">
-              {totalUnits} {totalUnits === 1 ? "unidad" : "unidades"} en tu carrito
-            </p>
-          )}
+          <p className="mt-1 text-sm text-muted-foreground">
+            Revisa los productos antes de continuar
+          </p>
         </div>
+
+        <CartStatus className="mb-6" />
 
         {cart.length === 0 ? (
           <section className="flex min-h-80 flex-col items-center justify-center rounded-xl border border-input px-6 py-12 text-center">
@@ -48,43 +63,66 @@ export default function CartPage() {
           </section>
         ) : (
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
-            <ul aria-label="Productos en tu carrito" className="min-w-0 space-y-4">
-              {cart.map((item) => (
-                <li key={item.id} className="grid gap-4 rounded-xl border border-input bg-card p-4 sm:grid-cols-[96px_minmax(0,1fr)]">
-                  <img src={item.image.url} alt={item.image.alt} className="size-24 rounded-lg bg-muted object-contain" loading="lazy" />
-                  <div className="flex min-w-0 items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <Link
-                        to={`/producto/${encodeURIComponent(item.product_id)}?${new URLSearchParams({ variante: item.sku, talla: item.selected_size })}`}
-                        className="rounded-sm font-medium leading-snug break-words hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      >
-                        {item.title}
-                      </Link>
-                      <p className="mt-2 text-sm text-muted-foreground">Talla: {item.selected_size}</p>
-                    </div>
-                    <RemoveCartItemDialog item={item} />
-                  </div>
-                  <dl className="grid grid-cols-2 gap-4 border-t border-input pt-4 sm:col-span-2 sm:grid-cols-3">
-                    <div className="min-w-0">
-                      <dt className="text-xs text-muted-foreground">Precio unitario</dt>
-                      <dd className="mt-1 break-words text-sm font-medium">{formatPrice(item.unit_price, item.currency)}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-xs text-muted-foreground">Cantidad</dt>
-                      <dd className="mt-1">
-                        <CartQuantityStepper item={item} />
-                      </dd>
-                    </div>
-                    <div className="col-span-2 min-w-0 sm:col-span-1">
-                      <dt className="text-xs text-muted-foreground">Subtotal</dt>
-                      <dd className="mt-1 break-words font-semibold">{formatPrice(get_item_subtotal(item), item.currency)}</dd>
-                    </div>
-                  </dl>
-                </li>
-              ))}
-            </ul>
-            <aside className="min-w-0 rounded-xl border border-input bg-card p-5 lg:sticky lg:top-6">
-              <h2 className="text-lg font-semibold">Resumen de compra</h2>
+            <div ref={products_container} className="min-w-0 scroll-mt-28 space-y-4">
+              <ul id="cart-products" aria-label="Productos en tu carrito" className="space-y-4">
+                {page_items.map((item) => (
+                  <CartItemCard key={item.id} item={item} />
+                ))}
+              </ul>
+              {total_pages > 1 && (
+                <Pagination aria-label="Paginación de productos del carrito" className="flex-wrap items-center gap-3 border-t border-input bg-background p-2">
+                  <PaginationContent className="flex-wrap justify-center">
+                    <PaginationItem>
+                      <PaginationPrevious
+                        href="#/carrito"
+                        aria-label="Página anterior"
+                        aria-controls="cart-products"
+                        aria-disabled={current_page === 1}
+                        tabIndex={current_page === 1 ? -1 : undefined}
+                        className={current_page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        onClick={(event) => {
+                          event.preventDefault()
+                          if (current_page > 1) change_page(current_page - 1)
+                        }}
+                      />
+                    </PaginationItem>
+                    {visible_pages.map((page_number) => (
+                      <PaginationItem key={page_number}>
+                        <PaginationLink
+                          href="#/carrito"
+                          isActive={page_number === current_page}
+                          className="cursor-pointer"
+                          aria-label={`Página ${page_number}`}
+                          aria-controls="cart-products"
+                          onClick={(event) => {
+                            event.preventDefault()
+                            change_page(page_number)
+                          }}
+                        >
+                          {page_number}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext
+                        href="#/carrito"
+                        aria-label="Página siguiente"
+                        aria-controls="cart-products"
+                        aria-disabled={current_page === total_pages}
+                        tabIndex={current_page === total_pages ? -1 : undefined}
+                        className={current_page === total_pages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        onClick={(event) => {
+                          event.preventDefault()
+                          if (current_page < total_pages) change_page(current_page + 1)
+                        }}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              )}
+            </div>
+            <aside className="min-w-0 rounded-xl border border-input bg-card p-5 lg:top-28">
+              <h2 className="text-lg font-semibold">Resumen del carrito</h2>
               <dl className="mt-4 space-y-3 text-sm">
                 <div className="flex items-center justify-between gap-3">
                   <dt className="text-muted-foreground">Unidades</dt>
@@ -92,24 +130,35 @@ export default function CartPage() {
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                   <dt className="text-muted-foreground">Subtotal</dt>
-                  <dd className="break-words font-medium">{formatPrice(subtotal, cart[0].currency)}</dd>
+                  <dd className="break-words font-medium">{can_checkout ? format_price(subtotal, cart[0].currency) : "—"}</dd>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                   <dt className="text-muted-foreground">Impuestos (13 %)</dt>
-                  <dd className="break-words font-medium">{formatPrice(tax, cart[0].currency)}</dd>
+                  <dd className="break-words font-medium">{can_checkout ? format_price(tax, cart[0].currency) : "—"}</dd>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                   <dt className="text-muted-foreground">Envío</dt>
-                  <dd className="break-words font-medium">{shipping === 0 ? "Gratis" : formatPrice(shipping, cart[0].currency)}</dd>
+                  <dd className="break-words font-medium">{can_checkout ? shipping === 0 ? "Gratis" : format_price(shipping, cart[0].currency) : "—"}</dd>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-input pt-4">
                   <dt className="text-base font-semibold">Total</dt>
-                  <dd className="break-words text-lg font-semibold">{formatPrice(total, cart[0].currency)}</dd>
+                  <dd className="break-words text-lg font-semibold">{can_checkout ? format_price(total, cart[0].currency) : "—"}</dd>
                 </div>
               </dl>
+              <Button
+                nativeButton={false}
+                render={<Link to="/checkout" />}
+                disabled={!can_checkout}
+                onClick={(event) => { if (!can_checkout) event.preventDefault() }}
+                size="lg"
+                className="mt-5 h-11 w-full cursor-pointer"
+              >
+                Continuar con la compra
+              </Button>
             </aside>
           </div>
         )}
+        {cart.length > 0 && <CartSuggestions />}
       </main>
     </div>
   )

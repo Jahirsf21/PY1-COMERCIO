@@ -1,20 +1,14 @@
-import { useEffect, useState } from "react"
-import { Link, useParams, useSearchParams } from "react-router-dom"
-import { ArrowLeftIcon, CheckIcon, MapPinIcon, PackageCheckIcon, StarIcon } from "lucide-react"
+import { useEffect, useLayoutEffect, useState } from "react"
+import { useParams, useSearchParams } from "react-router-dom"
+import { CheckIcon, MapPinIcon, PackageCheckIcon, StarIcon } from "lucide-react"
 import { cn } from "cn"
-import type { VariantsResult } from "@/lib/types/product"
-import { getProductVariants } from "@/lib/getProductVariants"
-import { getAvailableQuantityBySize, getSizesFromStock } from "@/lib/getProductStock"
+import type { VariantsResult } from "@/lib/catalog/types"
+import { get_available_quantity_by_size, get_product_variants, get_sizes_from_stock } from "@/lib/catalog/catalog"
+import { get_cart_quantity_limits } from "@/lib/cart/cart"
 import { AddToCartForm } from "@/features/product-detail/AddToCartForm"
+import { ProductSuggestions } from "@/features/product-detail/ProductSuggestions"
 import { ShopHeader } from "@/components/shop-header"
-
-function formatPrice(value: number, currency: string) {
-  return new Intl.NumberFormat("es-CR", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value);
-}
+import { format_price } from "@/lib/shared/utils"
 
 function ProductDetailSkeleton() {
   return (
@@ -47,10 +41,14 @@ export default function ProductDetailPage() {
     imageIndex: 0,
   });
 
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [productId]);
+
   useEffect(() => {
     let active = true;
 
-    getProductVariants(productId)
+    get_product_variants(productId)
       .then((variants) => {
         if (active) setResult({ productId, variants, error: false });
       })
@@ -71,7 +69,7 @@ export default function ProductDetailPage() {
     variants.find((variant) => variant.sku === requestedSku) ??
     variants[0];
   const stockByLocation = selectedVariant?.b2c_stock_by_location ?? [];
-  const sizes = getSizesFromStock(stockByLocation);
+  const sizes = get_sizes_from_stock(stockByLocation);
   const selectedSize =
     selectedVariant?.sku === requestedSku && requestedSize && sizes.includes(requestedSize)
       ? requestedSize
@@ -93,14 +91,8 @@ export default function ProductDetailPage() {
         <main className="mx-auto flex max-w-xl flex-col items-center px-4 py-24 text-center">
           <h1 className="text-2xl font-semibold">Producto no disponible</h1>
           <p className="mt-3 text-muted-foreground">
-            No pudimos encontrar las variantes de este producto.
+            No pudimos cargar este producto. Intenta de nuevo.
           </p>
-          <Link
-            to="/"
-            className="mt-6 rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/80"
-          >
-            Volver al catálogo
-          </Link>
         </main>
       </div>
     );
@@ -119,22 +111,18 @@ export default function ProductDetailPage() {
   const currentPrice = discount
     ? selectedVariant.b2c_price * (1 - discount.percentage / 100)
     : selectedVariant.b2c_price;
-  const availableSizes = sizes.filter((size) => getAvailableQuantityBySize(stockByLocation, size) > 0).length;
-  const availableQuantity = selectedSize ? getAvailableQuantityBySize(stockByLocation, selectedSize) : 0;
-  const isAvailable = availableQuantity > 0;
+  const availableSizes = sizes.filter((size) => {
+    const limits = get_cart_quantity_limits(selectedVariant, get_available_quantity_by_size(stockByLocation, size));
+    return limits !== null && limits.max_quantity >= limits.min_quantity;
+  }).length;
+  const availableQuantity = selectedSize ? get_available_quantity_by_size(stockByLocation, selectedSize) : 0;
+  const quantityLimits = get_cart_quantity_limits(selectedVariant, availableQuantity);
+  const isAvailable = quantityLimits !== null && quantityLimits.max_quantity >= quantityLimits.min_quantity;
 
   return (
     <div className="min-h-dvh bg-background">
-      <ShopHeader />
+      <ShopHeader sticky />
       <main className="mx-auto w-full max-w-[1440px] px-4 py-5 lg:px-8 lg:py-8">
-        <Link
-          to="/"
-          className="mb-5 inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <ArrowLeftIcon aria-hidden="true" className="size-4" />
-          Volver al catálogo
-        </Link>
-
         <div className="grid grid-cols-[4.5rem_minmax(0,1fr)] items-start gap-3 lg:grid-cols-[5.5rem_minmax(0,1fr)_minmax(320px,380px)] lg:gap-6 xl:grid-cols-[6rem_minmax(0,640px)_400px] xl:justify-center">
           <section aria-label="Imágenes del producto" className="contents">
             <div className="flex max-h-[75vw] flex-col gap-2 overflow-y-auto pr-1 lg:max-h-[calc(100vh-9rem)]">
@@ -189,12 +177,12 @@ export default function ProductDetailPage() {
               <div className="mt-4 flex items-center justify-between gap-4">
                 <div>
                   <p className="text-xl font-semibold">
-                    {formatPrice(currentPrice, selectedVariant.currency)}
+                    {format_price(currentPrice, selectedVariant.currency)}
                   </p>
                   {discount && (
                     <p className="text-sm text-muted-foreground">
                       <span className="line-through">
-                        {formatPrice(selectedVariant.b2c_price, selectedVariant.currency)}
+                        {format_price(selectedVariant.b2c_price, selectedVariant.currency)}
                       </span>{" "}
                       <span className="font-medium text-foreground">
                         {discount.percentage}% de descuento
@@ -285,14 +273,14 @@ export default function ProductDetailPage() {
               <PackageCheckIcon aria-hidden="true" className="size-5 shrink-0" />
               <div>
                 <p className="font-medium">
-                  {!selectedSize ? "Selecciona una talla" : isAvailable ? "Disponible" : "Temporalmente agotado"}
+                  {!selectedSize ? "Selecciona una talla" : isAvailable ? "Disponible" : "No disponible"}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {!selectedSize
                     ? "La disponibilidad depende del color y la talla."
                     : isAvailable
                       ? `${availableQuantity} unidades disponibles`
-                      : "Prueba con otra talla o color"}
+                      : "Prueba con otra talla o color."}
                 </p>
               </div>
             </div>
@@ -326,10 +314,10 @@ export default function ProductDetailPage() {
               )}
               <DetailRow label="Materiales" value={selectedVariant.facets.materials.join(", ")} />
               <DetailRow label="Género" value={selectedVariant.facets.gender.join(", ")} />
-              <DetailRow
-                label="Cantidad por pedido"
-                value={`${selectedVariant.b2c_min_order_quantity}–${selectedVariant.b2c_max_order_quantity} unidades, en incrementos de ${selectedVariant.b2c_step_quantity}`}
-              />
+               {selectedVariant.b2c_min_order_quantity > 1 && (
+                 <DetailRow label="Compra mínima" value={`${selectedVariant.b2c_min_order_quantity} unidades`} />
+               )}
+               <DetailRow label="Máximo por compra" value={`${selectedVariant.b2c_max_order_quantity} ${selectedVariant.b2c_max_order_quantity === 1 ? "unidad" : "unidades"}`} />
               {selectedVariant.facets.recommend_use && (
                 <DetailRow
                   label="Uso recomendado"
@@ -358,7 +346,7 @@ export default function ProductDetailPage() {
                     </div>
                     <span className="flex items-center gap-1 whitespace-nowrap">
                       <CheckIcon aria-hidden="true" className="size-4" />
-                      {getAvailableQuantityBySize([location], selectedSize)} disponibles
+                      {get_available_quantity_by_size([location], selectedSize)} disponibles
                     </span>
                   </li>
                 ))}
@@ -366,6 +354,7 @@ export default function ProductDetailPage() {
             </div>
           )}
         </section>
+        <ProductSuggestions product={selectedVariant} />
       </main>
     </div>
   );

@@ -5,6 +5,7 @@ export function SearchInput() {
   const { query, refine } = useSearchBox();
   return (
     <Input
+      data-navigation-focus
       aria-label="Buscar productos"
       className="h-12 px-4 text-base transition-colors duration-150 hover:border-ring motion-reduce:transition-none md:text-base"
       value={query}

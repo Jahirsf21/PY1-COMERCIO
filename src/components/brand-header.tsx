@@ -1,5 +1,5 @@
 export function BrandHeader({ heading = true }: { heading?: boolean }) {
-  const titleClassName = "font-nasalization text-3xl tracking-[0.12em]";
+  const titleClassName = "hidden font-nasalization text-3xl tracking-[0.12em] sm:inline";
 
   return (
     <div className="flex items-center gap-3">
