@@ -10,6 +10,15 @@ import type { OrderDetails } from "@/lib/orders/types"
 import { get_card_brand, validate_card_payment_data } from "@/lib/payments/payments"
 import type { CardPaymentData } from "@/lib/payments/types"
 import { format_price } from "@/lib/shared/utils"
+import amex_logo from "@/assets/cards/amex.svg"
+import mastercard_logo from "@/assets/cards/mastercard.svg"
+import visa_logo from "@/assets/cards/visa.svg"
+
+const accepted_cards = [
+  { name: "Visa", src: visa_logo },
+  { name: "Mastercard", src: mastercard_logo },
+  { name: "American Express", src: amex_logo },
+]
 
 /**
  * Permite pagar una orden guardada mediante pay_order(), manteniendo la tarjeta solo en memoria.
@@ -117,12 +126,21 @@ export function PaymentForm({ order }: { order: OrderDetails }) {
 
   return (
     <section aria-labelledby="payment-form-title" className="min-w-0 rounded-xl border border-input bg-card p-5 sm:p-6">
-      <div className="flex items-center gap-2">
-        <CreditCardIcon aria-hidden="true" className="size-5 text-muted-foreground" />
-        <h2 id="payment-form-title" className="text-lg font-semibold">Datos de pago</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <CreditCardIcon aria-hidden="true" className="size-5 text-muted-foreground" />
+          <h2 id="payment-form-title" className="text-lg font-semibold">Datos de pago</h2>
+        </div>
+        <ul aria-label="Tarjetas aceptadas" className="flex items-center gap-1.5">
+          {accepted_cards.map((card) => (
+            <li key={card.name}>
+              <img src={card.src} alt={card.name} width={38} height={24} className="h-6 w-auto rounded-sm" />
+            </li>
+          ))}
+        </ul>
       </div>
       <p id="payment-form-description" className="mt-2 text-sm text-muted-foreground">
-        Este es un pago simulado. Utiliza una tarjeta de prueba Visa, Mastercard o American Express.
+        Todas las transacciones son seguras y están encriptadas.
       </p>
       <div role="status" aria-atomic="true" className={status_title ? "mt-5 rounded-lg border border-input bg-muted/40 p-4 text-sm" : undefined}>
         {status_title && (
