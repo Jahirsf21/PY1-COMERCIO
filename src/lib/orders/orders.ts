@@ -1,6 +1,7 @@
 import type { CartItem } from "@/lib/cart/types"
 import type { BuyerInfo, CheckoutFormData, DeliveryInfo } from "@/lib/checkout/types"
 import type { OrderAction, OrderDetails, OrderItem, OrderStatus, OrdersStorageSnapshot } from "@/lib/orders/types"
+import type { Payment, PaymentResult } from "@/lib/payments/types"
 import { get_cart_shipping_cost, get_cart_subtotal, get_cart_tax, get_cart_total, get_item_subtotal } from "@/lib/cart/cart"
 import { get_stored_json, is_nonempty_string, is_positive_integer, is_record, is_valid_currency, is_valid_image, is_valid_price, save_stored_list } from "@/lib/shared/utils"
 
@@ -84,10 +85,37 @@ function parse_order_item(raw_item: unknown, order_id: string): OrderItem | null
 }
 
 /**
+ * Valida el pago de un pedido.
+ * Comprueba los identificadores, la fecha, el monto, la moneda y el estado, y que pertenezca al pedido y coincida con su total y moneda.
+ * @param raw_payment Pago sin validar.
+ * @param order Identificador, total y moneda del pedido.
+ * @returns Pago validado, o null si es inválido.
+ */
+function parse_order_payment(raw_payment: unknown, order: Pick<OrderDetails, "id" | "total" | "currency">): Payment | null {
+  if (!is_record(raw_payment) || !is_nonempty_string(raw_payment.id) || raw_payment.order_id !== order.id ||
+    typeof raw_payment.created_at !== "string" || Number.isNaN(Date.parse(raw_payment.created_at)) ||
+    !is_valid_price(raw_payment.amount) || raw_payment.amount !== order.total ||
+    !is_valid_currency(raw_payment.currency) || raw_payment.currency !== order.currency ||
+    (raw_payment.status !== "PENDING" && raw_payment.status !== "APPROVE" && raw_payment.status !== "DECLINED" && raw_payment.status !== "ERROR")) {
+    return null
+  }
+
+  return {
+    id: raw_payment.id.trim(),
+    order_id: order.id,
+    created_at: raw_payment.created_at,
+    amount: raw_payment.amount,
+    currency: raw_payment.currency,
+    status: raw_payment.status,
+  }
+}
+
+/**
  * Valida los datos de los pedidos y conserva los que tienen una estructura válida.
  * Por cada pedido:
  * - Valida el identificador, el número, la fecha, la moneda, los montos y el estado.
  * - Valida la persona compradora, la entrega y los productos mediante parse_order_buyer(), parse_order_delivery() y parse_order_item().
+ * - Valida que payment sea null o un pago válido según parse_order_payment().
  * - Descarta los pedidos con un identificador o número repetido.
  * @param orders_data Datos de los pedidos sin validar.
  * @returns Pedidos validados.
@@ -115,7 +143,8 @@ export function parse_orders_data(orders_data: unknown): OrdersStorageSnapshot {
     const buyer = parse_order_buyer(raw_order.buyer)
     const delivery = parse_order_delivery(raw_order.delivery)
     const items = raw_order.items.map((raw_item) => parse_order_item(raw_item, order_id))
-    if (!buyer || !delivery || items.some((item) => item === null) ||
+    const payment = raw_order.payment === null ? null : parse_order_payment(raw_order.payment, { id: order_id, total: raw_order.total, currency: raw_order.currency })
+    if (!buyer || !delivery || items.some((item) => item === null) || (raw_order.payment !== null && !payment) ||
       orders_by_id.has(order_id) || order_numbers.has(raw_order.order_number)) {
       storage_snapshot.discarded_orders = true
       continue
@@ -134,6 +163,7 @@ export function parse_orders_data(orders_data: unknown): OrdersStorageSnapshot {
       total: raw_order.total,
       status: raw_order.status,
       items: items.filter((item) => item !== null),
+      payment,
     })
     order_numbers.add(raw_order.order_number)
   }
@@ -199,7 +229,7 @@ export function create_order_item(item: CartItem, order_id: string): OrderItem {
  * @param form_data Información del comprador y la entrega.
  * @param cart Líneas del carrito.
  * @param order_number Número del pedido.
- * @returns Pedido creado, o null si el carrito está vacío o tiene más de una moneda.
+ * @returns Pedido creado sin pago, o null si el carrito está vacío o tiene más de una moneda.
  */
 export function create_order(form_data: CheckoutFormData, cart: CartItem[], order_number: number): OrderDetails | null {
   if (cart.length === 0 || new Set(cart.map((item) => item.currency)).size !== 1) return null
@@ -217,6 +247,7 @@ export function create_order(form_data: CheckoutFormData, cart: CartItem[], orde
     total: get_cart_total(cart),
     status: "PENDING",
     items: cart.map((item) => create_order_item(item, order_id)),
+    payment: null,
   }
 }
 
@@ -233,17 +264,97 @@ export function add_order(state: OrderDetails[], new_order: OrderDetails): Order
 
 /**
  * Actualiza el estado de un pedido.
+ * No permite confirmar un pedido ni cambiar el estado de un pedido confirmado; la confirmación solo ocurre al aprobarse su pago.
  * @param state Estado actual de los pedidos.
  * @param order_id Identificador del pedido.
  * @param status Estado nuevo.
- * @returns Pedidos actualizados, o el mismo estado si el pedido no existe o ya tiene ese estado.
+ * @returns Pedidos actualizados, o el mismo estado si el pedido no existe, ya tiene ese estado, está confirmado o el estado nuevo es CONFIRMED.
  */
 export function set_order_status(state: OrderDetails[], order_id: string, status: OrderStatus): OrderDetails[] {
   const order = state.find((current_order) => current_order.id === order_id)
-  if (!order || order.status === status) return state
+  if (!order || order.status === status || order.status === "CONFIRMED" || status === "CONFIRMED") return state
   return state.map((current_order) =>
     current_order.id === order_id ? { ...current_order, status } : current_order,
   )
+}
+
+/**
+ * Obtiene el motivo por el que un pedido no admite un nuevo pago.
+ * @param order Pedido que se desea pagar.
+ * @returns Mensaje si el pedido no está PENDING o su pago está PENDING o APPROVE; null si se puede pagar.
+ */
+export function get_order_payment_block(order: OrderDetails): string | null {
+  if (order.status === "CONFIRMED" || order.payment?.status === "APPROVE") return "Esta orden ya fue pagada."
+  if (order.status !== "PENDING") return "Esta orden no se puede pagar."
+  if (order.payment?.status === "PENDING") return "Ya hay un pago en proceso para esta orden."
+  return null
+}
+
+/**
+ * Crea un pago con estado PENDING por el total y la moneda de un pedido.
+ * @param order Pedido que se desea pagar.
+ * @returns Pago pendiente con un identificador y fecha nuevos.
+ */
+export function create_order_payment(order: OrderDetails): Payment {
+  return {
+    id: crypto.randomUUID(),
+    order_id: order.id,
+    created_at: new Date().toISOString(),
+    amount: order.total,
+    currency: order.currency,
+    status: "PENDING",
+  }
+}
+
+/**
+ * Asigna un pago PENDING a un pedido y reemplaza el pago anterior rechazado o con error.
+ * @param state Estado actual de los pedidos.
+ * @param order_id Identificador del pedido.
+ * @param payment Pago pendiente.
+ * @returns Pedidos actualizados, o el mismo estado si el pedido no existe, no admite pagos o el pago no coincide con su total y moneda.
+ */
+export function start_order_payment(state: OrderDetails[], order_id: string, payment: Payment): OrderDetails[] {
+  const order = state.find((current_order) => current_order.id === order_id)
+  if (!order || get_order_payment_block(order) || payment.status !== "PENDING" || payment.order_id !== order_id ||
+    payment.amount !== order.total || payment.currency !== order.currency) {
+    return state
+  }
+  return state.map((current_order) =>
+    current_order.id === order_id ? { ...current_order, payment } : current_order,
+  )
+}
+
+/**
+ * Registra el resultado del pago vigente de un pedido.
+ * Cambia el pedido a CONFIRMED si el pago se aprueba; si se rechaza o falla, el pedido sigue en PENDING.
+ * @param state Estado actual de los pedidos.
+ * @param order_id Identificador del pedido.
+ * @param payment_id Identificador del pago.
+ * @param result Resultado del sandbox de pagos.
+ * @returns Pedidos actualizados, o el mismo estado si el pedido no existe o el pago ya no es el vigente o no está PENDING.
+ */
+export function complete_order_payment(state: OrderDetails[], order_id: string, payment_id: string, result: PaymentResult): OrderDetails[] {
+  const order = state.find((current_order) => current_order.id === order_id)
+  if (!order || !order.payment || order.payment.id !== payment_id || order.payment.status !== "PENDING") return state
+  const payment: Payment = { ...order.payment, status: result.status }
+  const status: OrderStatus = result.status === "APPROVE" ? "CONFIRMED" : order.status
+  return state.map((current_order) =>
+    current_order.id === order_id ? { ...current_order, status, payment } : current_order,
+  )
+}
+
+/**
+ * Cambia a ERROR los pagos que quedaron en PENDING al recargar la página.
+ * @param orders Pedidos recuperados.
+ * @returns Pedidos con los pagos interrumpidos en ERROR, o el mismo arreglo si no había pagos pendientes.
+ */
+export function recover_interrupted_payments(orders: OrderDetails[]): OrderDetails[] {
+  if (!orders.some((order) => order.payment?.status === "PENDING")) return orders
+  return orders.map((order) => {
+    if (order.payment?.status !== "PENDING") return order
+    const payment: Payment = { ...order.payment, status: "ERROR" }
+    return { ...order, payment }
+  })
 }
 
 /**
@@ -258,5 +369,9 @@ export function orders_reducer(state: OrderDetails[], action: OrderAction): Orde
       return add_order(state, action.order)
     case "set_status":
       return set_order_status(state, action.order_id, action.status)
+    case "start_payment":
+      return start_order_payment(state, action.order_id, action.payment)
+    case "complete_payment":
+      return complete_order_payment(state, action.order_id, action.payment_id, action.result)
   }
 }
