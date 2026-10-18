@@ -1,5 +1,6 @@
 import { ShopHeader } from "@/components/shop-header"
 import { CheckoutForm } from "@/features/checkout/components/CheckoutForm"
+import { CheckoutOrderProducts } from "@/features/checkout/components/CheckoutOrderProducts"
 import { CheckoutOrderSummary } from "@/features/checkout/components/CheckoutOrderSummary"
 
 export default function Checkout() {
@@ -11,8 +12,9 @@ export default function Checkout() {
         <p className="mt-2 text-sm text-muted-foreground">
           Completa tus datos y revisa los productos de tu pedido.
         </p>
-        <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="mt-6 space-y-6">
           <CheckoutForm />
+          <CheckoutOrderProducts />
           <CheckoutOrderSummary />
         </div>
       </main>

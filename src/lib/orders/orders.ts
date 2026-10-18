@@ -1,6 +1,6 @@
 import type { CartItem } from "@/lib/cart/types"
 import type { BuyerInfo, CheckoutFormData, DeliveryInfo } from "@/lib/checkout/types"
-import type { OrderAction, OrderDetails, OrderItem, OrderStatus, OrdersStorageSnapshot } from "@/lib/orders/types"
+import type { OrderAction, OrderAvailability, OrderDetails, OrderItem, OrderPagination, OrderStatus, OrdersStorageSnapshot } from "@/lib/orders/types"
 import type { Payment, PaymentResult } from "@/lib/payments/types"
 import { get_cart_shipping_cost, get_cart_subtotal, get_cart_tax, get_cart_total, get_item_subtotal } from "@/lib/cart/cart"
 import { get_stored_json, is_nonempty_string, is_positive_integer, is_record, is_valid_currency, is_valid_image, is_valid_price, save_stored_list } from "@/lib/shared/utils"
@@ -197,6 +197,60 @@ export function save_orders(orders: OrderDetails[]): boolean {
 }
 
 /**
+ * Ejecuta una operación bajo el bloqueo de escritura compartido por las pestañas de este origen.
+ * Requiere Web Locks para no simular exclusión mediante lecturas y escrituras separadas de localStorage.
+ * @param operation Operación de lectura, modificación y guardado.
+ * @returns Resultado de la operación cuando se obtiene el bloqueo.
+ * @throws Si el navegador no ofrece Web Locks o la operación falla.
+ */
+export async function with_orders_lock<Result>(operation: () => Result): Promise<Result> {
+  if (!navigator.locks) throw new Error("El navegador no permite coordinar los pedidos.")
+  return navigator.locks.request("space-shop-orders", operation)
+}
+
+/**
+ * Obtiene el bloqueo exclusivo de un pago y lo conserva hasta llamar a la función devuelta.
+ * Las recuperaciones pueden esperar a que termine la simulación activa; un nuevo pago o cancelación no espera.
+ * El navegador libera el bloqueo si se cierra o recarga la pestaña propietaria.
+ * @param order_id Identificador del pedido.
+ * @param wait Indica si debe esperar un bloqueo ocupado; por defecto, false.
+ * @param signal Señal que permite cancelar una solicitud que todavía está esperando.
+ * @returns Función para liberar el bloqueo, o null si no está disponible o se canceló la solicitud.
+ * @throws Si el navegador no ofrece Web Locks.
+ */
+export async function acquire_order_payment_lock(order_id: string, wait = false, signal?: AbortSignal): Promise<(() => void) | null> {
+  if (!navigator.locks) throw new Error("El navegador no permite coordinar los pagos.")
+  return new Promise((resolve) => {
+    const options: LockOptions = wait ? { signal } : { ifAvailable: true }
+    void navigator.locks.request(`space-shop-order-payment:${order_id}`, options, (lock) => {
+      if (!lock) {
+        resolve(null)
+        return
+      }
+      return new Promise<void>((release) => { resolve(release) })
+    }).catch(() => resolve(null))
+  })
+}
+
+/**
+ * Combina los pedidos persistidos con los resultados locales que todavía no se pudieron guardar.
+ * Solo conserva un resultado local si el almacenamiento mantiene pendiente el mismo intento.
+ * No sobrescribe pedidos confirmados, cancelados, eliminados ni pagos reemplazados por otra pestaña.
+ * @param stored_orders Pedidos leídos del almacenamiento.
+ * @param local_orders Pedidos de esta pestaña.
+ * @param unsaved_order_ids Pedidos con resultados locales pendientes de guardar.
+ * @returns Pedidos actuales con los resultados locales que siguen vigentes.
+ */
+export function merge_unsaved_orders(stored_orders: OrderDetails[], local_orders: OrderDetails[], unsaved_order_ids: string[]): OrderDetails[] {
+  const local_updates = new Map(local_orders.filter((order) => unsaved_order_ids.includes(order.id)).map((order) => [order.id, order]))
+  return stored_orders.map((order) => {
+    const local_order = local_updates.get(order.id)
+    if (!local_order || order.status !== "PENDING" || order.payment?.status !== "PENDING" || order.payment.id !== local_order.payment?.id) return order
+    return local_order
+  })
+}
+
+/**
  * Calcula el siguiente número consecutivo de pedido.
  * @param orders Pedidos existentes.
  * @returns Número mayor registrado más uno, o 1 si no hay pedidos.
@@ -255,6 +309,29 @@ export function create_order(form_data: CheckoutFormData, cart: CartItem[], orde
 }
 
 /**
+ * Divide los productos guardados de un pedido en páginas de cuatro elementos, sin modificarlos.
+ * Ajusta la página solicitada al rango disponible y usa la primera si el valor es inválido.
+ * @param items Productos guardados en el pedido.
+ * @param requested_page Página solicitada, empezando en 1; por defecto, 1.
+ * @returns Productos de la página actual y cantidades de páginas y productos.
+ */
+export function get_order_pagination(items: OrderItem[], requested_page = 1): OrderPagination {
+  const items_per_page = 4
+  const total_products = items.length
+  const total_pages = Math.ceil(total_products / items_per_page)
+  const valid_page = Number.isSafeInteger(requested_page) && requested_page > 0 ? requested_page : 1
+  const current_page = Math.min(valid_page, Math.max(total_pages, 1))
+  const first_item_index = (current_page - 1) * items_per_page
+
+  return {
+    page_items: items.slice(first_item_index, first_item_index + items_per_page),
+    current_page,
+    total_pages,
+    total_products,
+  }
+}
+
+/**
  * Agrega un pedido al inicio de la lista.
  * @param state Estado actual de los pedidos.
  * @param new_order Pedido que se desea agregar.
@@ -291,6 +368,32 @@ export function get_order_payment_block(order: OrderDetails): string | null {
   if (order.status !== "PENDING") return "Esta orden no se puede pagar."
   if (order.payment?.status === "PENDING") return "Ya hay un pago en proceso para esta orden."
   return null
+}
+
+/**
+ * Obtiene el estado visible y las acciones permitidas para un pedido y su resultado de pago vigente.
+ * La persistencia y los bloqueos entre pestañas se vuelven a comprobar al ejecutar las acciones.
+ * @param order Pedido que se desea consultar.
+ * @param has_unsaved_result Indica si su resultado de pago todavía no se ha guardado; por defecto, false.
+ * @returns Etiqueta del estado y disponibilidad de confirmación, procesamiento, pago y cancelación.
+ */
+export function get_order_availability(order: OrderDetails, has_unsaved_result = false): OrderAvailability {
+  const is_confirmed = !has_unsaved_result && order.status === "CONFIRMED" && order.payment?.status === "APPROVE"
+  const is_processing = !has_unsaved_result && order.status === "PENDING" && order.payment?.status === "PENDING"
+  const can_pay = !has_unsaved_result && get_order_payment_block(order) === null
+  const status_label = has_unsaved_result ? "Pendiente de guardar" : is_confirmed ? "Confirmado"
+    : order.status === "CANCELLED" ? "Cancelado" : is_processing ? "Pago en proceso" : "Pendiente"
+  return { status_label, is_confirmed, is_processing, can_pay, can_cancel: can_pay }
+}
+
+/**
+ * Formatea la fecha de creación de un pedido con la configuración regional de Costa Rica.
+ * Usa la zona horaria del navegador para mostrar la fecha y la hora.
+ * @param created_at Fecha válida de creación del pedido.
+ * @returns Fecha y hora legibles para la persona compradora.
+ */
+export function format_order_date(created_at: string): string {
+  return new Intl.DateTimeFormat("es-CR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(created_at))
 }
 
 /**

@@ -5,18 +5,21 @@ import { FieldGroup, FieldSeparator } from "@/components/ui/field"
 import { toast } from "@/components/ui/toast"
 import { CheckoutBuyerFields } from "@/features/checkout/components/CheckoutBuyerFields"
 import { CheckoutDeliveryFields } from "@/features/checkout/components/CheckoutDeliveryFields"
-import { get_stored_checkout_form_data, save_checkout_form_data, validate_buyer_fields, validate_delivery_fields } from "@/lib/checkout/checkout"
+import { clear_stored_checkout_form_data, get_stored_checkout_form_data, save_checkout_form_data, validate_buyer_fields, validate_delivery_fields } from "@/lib/checkout/checkout"
 import { get_name_from_hacienda, validate_identification } from "@/lib/identification/identification"
 import type { BuyerInfo, DeliveryInfo } from "@/lib/checkout/types"
 import { useCart } from "@/lib/cart/cartContext"
 import { useOrders } from "@/lib/orders/ordersContext"
 import { format_price } from "@/lib/shared/utils"
 
+const pending_name_message = "Espera a que se complete la consulta del nombre antes de continuar."
+
 export function CheckoutForm() {
   const { cart, can_checkout, clear_cart } = useCart()
-  const { create_order } = useOrders()
+  const { create_order, is_creating_order } = useOrders()
   const navigate = useNavigate()
   const formRef = useRef<HTMLFormElement>(null)
+  const submitting = useRef(false)
   const [formData, setFormData] = useState(get_stored_checkout_form_data)
   const [buyerErrors, setBuyerErrors] = useState<Partial<Record<keyof BuyerInfo, string>>>({})
   const [deliveryErrors, setDeliveryErrors] = useState<Partial<Record<keyof DeliveryInfo, string>>>({})
@@ -49,9 +52,13 @@ export function CheckoutForm() {
           full_name: full_name ?? "",
           error: full_name ? undefined : "No se encontró un nombre para esta identificación. Revisa el número ingresado.",
         })
+        setBuyerErrors((previous) => previous.identification_number === pending_name_message
+          ? { ...previous, identification_number: undefined } : previous)
       } catch {
         if (!active) return
         setNameResult({ key: lookupKey, full_name: "", error: "No se pudo completar el nombre. Intenta nuevamente." })
+        setBuyerErrors((previous) => previous.identification_number === pending_name_message
+          ? { ...previous, identification_number: undefined } : previous)
       }
     }, 350)
     return () => {
@@ -124,14 +131,15 @@ export function CheckoutForm() {
    * Valida los datos del comprador y la entrega al enviar el formulario.
    * Si hay errores, los muestra y enfoca el primer campo inválido.
    * Espera un nombre válido de Hacienda cuando la identificación requiere consulta.
-   * Si los datos son válidos, guarda la orden mediante create_order(), vacía el carrito y abre su vista de pago.
+   * Si los datos son válidos, guarda la orden, limpia el borrador y vacía el carrito antes de abrir su pago.
+   * Reemplaza el checkout completado en el historial y conserva los datos si la creación falla.
    * Agrupa el vaciado y la navegación para evitar que la protección de checkout redirija antes de abrir el pago.
    * @param event Evento de envío del formulario.
-   * @returns No retorna ningún valor.
+   * @returns Promesa que termina después de crear la orden o mostrar los errores.
    */
-  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
-    if (!can_checkout) return
+    if (submitting.current || !can_checkout) return
     const buyer_errors = validate_buyer_fields(buyer)
     const delivery_errors = validate_delivery_fields(formData.delivery)
 
@@ -140,7 +148,7 @@ export function CheckoutForm() {
       delete buyer_errors.full_name
       buyer_errors.identification_number ??= lookupError ?? (
         canLookupName && !currentNameResult
-          ? "Espera a que se complete la consulta del nombre antes de continuar."
+          ? pending_name_message
           : name_error
       )
     }
@@ -149,24 +157,32 @@ export function CheckoutForm() {
     setDeliveryErrors(delivery_errors)
     const has_errors = Object.keys(buyer_errors).length > 0 || Object.keys(delivery_errors).length > 0
     if (!has_errors) {
-      const order = create_order({ buyer, delivery: formData.delivery }, cart)
-      if (!order) {
-        toast.add({
-          title: "No pudimos generar la orden",
-          description: "Revisa los productos y que tu navegador permita guardar datos, e intenta nuevamente.",
-          type: "error",
+      submitting.current = true
+      let is_order_saved = false
+      try {
+        const order = await create_order({ buyer, delivery: formData.delivery }, cart)
+        if (!order) {
+          toast.add({
+            title: "No pudimos generar la orden",
+            description: "Revisa los productos y que tu navegador permita guardar datos, e intenta nuevamente.",
+            type: "error",
+          })
+          return
+        }
+        is_order_saved = true
+        clear_stored_checkout_form_data()
+        startTransition(() => {
+          clear_cart()
+          navigate(`/pedido/${encodeURIComponent(order.id)}/pago`, { replace: true })
         })
-        return
+        toast.add({
+          title: `Orden #${order.order_number} generada`,
+          description: `Total: ${format_price(order.total, order.currency)}`,
+          type: "success",
+        })
+      } finally {
+        if (!is_order_saved) submitting.current = false
       }
-      startTransition(() => {
-        clear_cart()
-        navigate(`/pedido/${order.id}/pago`)
-      })
-      toast.add({
-        title: `Orden #${order.order_number} generada`,
-        description: `Total: ${format_price(order.total, order.currency)}`,
-        type: "success",
-      })
       return
     }
 
@@ -185,26 +201,30 @@ export function CheckoutForm() {
       ref={formRef}
       noValidate
       onSubmit={handleSubmit}
+      aria-busy={is_creating_order}
       aria-labelledby="checkout-form-title"
       className="min-w-0 rounded-xl border border-input bg-card p-5 sm:p-6"
     >
       <h2 id="checkout-form-title" className="text-lg font-semibold">1. Datos del cliente y entrega</h2>
-      <FieldGroup className="mt-6 gap-7">
-        <CheckoutBuyerFields
-          buyer={buyer}
-          errors={buyerErrors}
-          lookupError={lookupError}
-          onChange={handleBuyerChange}
-          onBlur={handleBuyerBlur}
-        />
-        <FieldSeparator />
-        <CheckoutDeliveryFields
-          delivery={formData.delivery}
-          errors={deliveryErrors}
-          onChange={handleDeliveryChange}
-          onBlur={handleDeliveryBlur}
-        />
-      </FieldGroup>
+      <fieldset disabled={is_creating_order} className="min-w-0">
+        <legend className="sr-only">Datos del cliente y entrega</legend>
+        <FieldGroup className="mt-6 gap-7">
+          <CheckoutBuyerFields
+            buyer={buyer}
+            errors={buyerErrors}
+            lookupError={lookupError}
+            onChange={handleBuyerChange}
+            onBlur={handleBuyerBlur}
+          />
+          <FieldSeparator />
+          <CheckoutDeliveryFields
+            delivery={formData.delivery}
+            errors={deliveryErrors}
+            onChange={handleDeliveryChange}
+            onBlur={handleDeliveryBlur}
+          />
+        </FieldGroup>
+      </fieldset>
     </form>
   )
 }

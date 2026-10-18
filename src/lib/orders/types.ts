@@ -25,6 +25,16 @@ export type OrderItem = {
 }
 
 /**
+ * Productos de una página del pedido y datos de su paginación.
+ */
+export type OrderPagination = {
+  page_items: OrderItem[]
+  current_page: number
+  total_pages: number
+  total_products: number
+}
+
+/**
  * Datos del pedido, comprador, entrega y montos de la compra.
  * tax es el monto del IVA y shipping el costo de envío.
  */
@@ -58,6 +68,18 @@ export type OrdersStorageSnapshot = {
   orders: OrderDetails[]
   discarded_orders: boolean
   storage_error: boolean
+}
+
+/**
+ * Estado visible y acciones permitidas para consultar un pedido.
+ * Un resultado sin guardar no se presenta como compra confirmada ni permite pagar o cancelar.
+ */
+export type OrderAvailability = {
+  status_label: string
+  is_confirmed: boolean
+  is_processing: boolean
+  can_pay: boolean
+  can_cancel: boolean
 }
 
 /**
@@ -106,13 +128,14 @@ export type PayOrderResult =
  */
 export type OrdersContextValue = {
   orders: OrderDetails[]
+  is_creating_order: boolean
   storage_error: boolean
   notice: string | null
   unsaved_order_ids: string[]
   dismiss_notice: () => void
-  retry_save_orders: () => boolean
+  retry_save_orders: () => Promise<boolean>
   get_order: (order_id: string) => OrderDetails | undefined
-  create_order: (form_data: CheckoutFormData, cart: CartItem[]) => OrderDetails | null
-  cancel_order: (order_id: string) => boolean
+  create_order: (form_data: CheckoutFormData, cart: CartItem[]) => Promise<OrderDetails | null>
+  cancel_order: (order_id: string) => Promise<boolean>
   pay_order: (order_id: string, card_data: CardPaymentData) => Promise<PayOrderResult>
 }
