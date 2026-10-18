@@ -25,7 +25,7 @@ export function ResultsPanel() {
         <HitsPerPageSelect />
       </div>
       <div className="relative min-h-0 flex-1">
-        <ScrollArea ref={resultsRef} className="h-full">
+        <ScrollArea ref={resultsRef} data-navigation-scroll="catalog-results" className="h-full">
           <div className="p-1 pr-3 pb-28 lg:pb-1">
             <ProductGrid />
           </div>

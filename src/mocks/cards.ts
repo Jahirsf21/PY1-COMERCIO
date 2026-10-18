@@ -15,7 +15,7 @@ export const mock_cards: MockCard[] = [
     brand: "Visa",
     expiration_date: "12/29",
     cvv: "123",
-    balance: 500000,
+    balance: 5000000,
     currency: "CRC",
     gateway_status: "AVAILABLE",
   },

@@ -19,7 +19,7 @@ export default function Catalog() {
           <SearchBar />
         </div>
         <div className="flex min-h-0 flex-1 gap-6 overflow-hidden p-4 lg:p-6">
-          <ScrollArea className="hidden w-64 shrink-0 lg:block">
+          <ScrollArea data-navigation-scroll="catalog-filters" className="hidden w-64 shrink-0 lg:block">
             <FilterPanel />
           </ScrollArea>
           <ResultsPanel />

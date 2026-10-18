@@ -6,7 +6,7 @@ import { FieldGroup } from "@/components/ui/field"
 import { CheckoutInputField } from "@/features/checkout/components/CheckoutInputField"
 import { get_order_payment_block } from "@/lib/orders/orders"
 import { useOrders } from "@/lib/orders/ordersContext"
-import type { OrderDetails } from "@/lib/orders/types"
+import type { OrderDetails, PayOrderResult } from "@/lib/orders/types"
 import { get_card_brand, validate_card_payment_data } from "@/lib/payments/payments"
 import type { CardPaymentData } from "@/lib/payments/types"
 import { format_price } from "@/lib/shared/utils"
@@ -20,15 +20,23 @@ const accepted_cards = [
   { name: "American Express", src: amex_logo },
 ]
 
+type PaymentFormProps = {
+  order: OrderDetails
+  on_result: (result: PayOrderResult) => void
+  on_error: () => void
+}
+
 /**
  * Permite pagar una orden guardada mediante pay_order(), manteniendo la tarjeta solo en memoria.
  * Reutiliza los campos del checkout para mostrar las etiquetas y los errores de la tarjeta.
- * Muestra validaciones y resultados del sandbox, y bloquea el formulario durante el procesamiento.
+ * Mantiene las validaciones de campos y comunica los resultados para mostrarlos fuera del formulario.
  * @param props Propiedades del formulario.
  * @param props.order Orden pendiente que se desea pagar.
- * @returns Formulario de tarjeta con los mensajes del pago y la opción de reintentar.
+ * @param props.on_result Acción que recibe el resultado del pago.
+ * @param props.on_error Acción que informa un error inesperado.
+ * @returns Formulario de tarjeta bloqueado mientras se procesa el pago.
  */
-export function PaymentForm({ order }: { order: OrderDetails }) {
+export function PaymentForm({ order, on_result, on_error }: PaymentFormProps) {
   const { pay_order } = useOrders()
   const form_ref = useRef<HTMLFormElement>(null)
   const submitting = useRef(false)
@@ -40,17 +48,8 @@ export function PaymentForm({ order }: { order: OrderDetails }) {
   })
   const [errors, set_errors] = useState<Partial<Record<keyof CardPaymentData, string>>>({})
   const [is_submitting, set_is_submitting] = useState(false)
-  const [feedback, set_feedback] = useState<{ title: string; message: string } | null>(null)
   const is_processing = is_submitting || order.payment?.status === "PENDING"
   const card_brand = get_card_brand(card_data.card_number)
-  const status_title = !is_submitting && feedback ? feedback.title
-    : is_processing ? "Procesando pago"
-      : order.payment?.status === "DECLINED" ? "Pago rechazado"
-        : order.payment?.status === "ERROR" ? "No se pudo completar el pago" : null
-  const status_message = !is_submitting && feedback ? feedback.message
-    : is_processing ? "Espera un momento mientras procesamos tu pago."
-      : order.payment?.status === "DECLINED" ? "Revisa los datos de tu tarjeta o utiliza otra para reintentar."
-        : order.payment?.status === "ERROR" ? "El pago se interrumpió o no pudo completarse. Puedes intentarlo nuevamente." : null
 
   /**
    * Actualiza un dato de la tarjeta y limpia el error de ese campo.
@@ -94,7 +93,6 @@ export function PaymentForm({ order }: { order: OrderDetails }) {
     if (submitting.current || get_order_payment_block(order)) return
     const validation_errors = validate_card_payment_data(card_data)
     set_errors(validation_errors)
-    set_feedback(null)
     if (Object.keys(validation_errors).length > 0) {
       window.requestAnimationFrame(() => {
         form_ref.current?.querySelector<HTMLInputElement>('[aria-invalid="true"]')?.focus()
@@ -106,17 +104,9 @@ export function PaymentForm({ order }: { order: OrderDetails }) {
     set_is_submitting(true)
     try {
       const result = await pay_order(order.id, { ...card_data })
-      set_feedback({
-        title: result.status === "rejected" ? "No pudimos iniciar el pago"
-          : result.payment.status === "DECLINED" ? "Pago rechazado"
-            : result.payment.status === "ERROR" ? "No se pudo completar el pago" : "Pago aprobado",
-        message: result.message,
-      })
+      on_result(result)
     } catch {
-      set_feedback({
-        title: "No pudimos completar el pago",
-        message: "Recarga esta página para consultar el estado de tu orden.",
-      })
+      on_error()
     } finally {
       set_card_data((previous) => ({ ...previous, cvv: "" }))
       submitting.current = false
@@ -142,17 +132,6 @@ export function PaymentForm({ order }: { order: OrderDetails }) {
       <p id="payment-form-description" className="mt-2 text-sm text-muted-foreground">
         Todas las transacciones son seguras y están encriptadas.
       </p>
-      <div role="status" aria-atomic="true" className={status_title ? "mt-5 rounded-lg border border-input bg-muted/40 p-4 text-sm" : undefined}>
-        {status_title && (
-          <>
-            <p className="flex items-center gap-2 font-semibold">
-              {is_processing && <LoaderCircleIcon aria-hidden="true" className="size-4 motion-safe:animate-spin" />}
-              {status_title}
-            </p>
-            <p className="mt-1 text-muted-foreground">{status_message}</p>
-          </>
-        )}
-      </div>
       <form ref={form_ref} noValidate onSubmit={submit_payment} aria-describedby="payment-form-description" aria-busy={is_processing} className="mt-6">
         <fieldset disabled={is_processing} className="min-w-0">
           <legend className="sr-only">Tarjeta de pago</legend>
@@ -216,6 +195,7 @@ export function PaymentForm({ order }: { order: OrderDetails }) {
           </FieldGroup>
         </fieldset>
         <Button type="submit" disabled={is_processing} size="lg" className="mt-6 h-11 w-full cursor-pointer">
+          {is_processing && <LoaderCircleIcon aria-hidden="true" className="size-4 motion-safe:animate-spin" />}
           {is_processing ? "Procesando pago…" : `${order.payment ? "Reintentar pago" : "Pagar"} ${format_price(order.total, order.currency)}`}
         </Button>
       </form>
